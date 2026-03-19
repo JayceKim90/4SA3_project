@@ -12,8 +12,8 @@ export interface Location {
   placeId?: string;
 }
 
-/** 취미 모임 (마일스톤 Groups 컬렉션) */
-export interface Group {
+/** 취미 모임 — MongoDB `hobbies` 컬렉션 */
+export interface Hobby {
   id: string;
   hostId: string;
   host?: User;
@@ -28,12 +28,12 @@ export interface Group {
   description?: string;
   createdAt: Date;
   updatedAt: Date;
-  participants?: GroupParticipant[];
+  participants?: HobbyParticipant[];
 }
 
-export interface GroupParticipant {
+export interface HobbyParticipant {
   id: string;
-  groupId: string;
+  hobbyId: string;
   userId: string;
   user?: User;
   contactEmail?: string;
@@ -43,7 +43,7 @@ export interface GroupParticipant {
   respondedAt?: Date;
 }
 
-export interface GroupFilters {
+export interface HobbyFilters {
   subject?: string;
   category?: string;
   tags?: string[];
@@ -52,20 +52,29 @@ export interface GroupFilters {
   userLocation?: { latitude: number; longitude: number };
 }
 
-export interface GroupSearchResult extends Group {
+export interface HobbySearchResult extends Hobby {
   distance?: number;
   relevanceScore?: number;
   participationStatus?: "pending" | "approved" | "rejected" | null;
 }
 
-/** 레거시 명명 — 동일 타입 */
-export type StudySession = Group;
-export type SessionParticipant = GroupParticipant;
-export type SessionFilters = GroupFilters;
-export type SessionSearchResult = GroupSearchResult;
-
-export function groupTitle(g: Pick<Group, "title"> & { subject?: string }): string {
-  if ("title" in g && g.title) return g.title;
-  const s = g as { subject?: string };
+export function hobbyTitle(
+  h: Pick<Hobby, "title"> & { subject?: string }
+): string {
+  if ("title" in h && h.title) return h.title;
+  const s = h as { subject?: string };
   return s.subject ?? "";
 }
+
+/** 레거시 별칭 — 동일 타입 */
+export type Group = Hobby;
+export type GroupParticipant = HobbyParticipant;
+export type GroupFilters = HobbyFilters;
+export type GroupSearchResult = HobbySearchResult;
+
+export const groupTitle = hobbyTitle;
+
+export type StudySession = Hobby;
+export type SessionParticipant = HobbyParticipant;
+export type SessionFilters = HobbyFilters;
+export type SessionSearchResult = HobbySearchResult;

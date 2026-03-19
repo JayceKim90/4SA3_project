@@ -23,8 +23,8 @@ export const swaggerConfig = {
     ],
     tags: [
       { name: "Authentication", description: "User authentication endpoints" },
-      { name: "Groups", description: "Hobby group (meetup) management — MongoDB" },
-      { name: "Participants", description: "Group participant / join requests" },
+      { name: "Hobbies", description: "Hobby meetups — MongoDB `hobbies` collection" },
+      { name: "Participants", description: "Join requests — MongoDB `participants` (hobbyId)" },
       { name: "Geocoding", description: "Address geocoding and location services" },
       { name: "Development", description: "Development and testing endpoints" },
     ],
@@ -244,9 +244,9 @@ export const swaggerConfig = {
           },
         },
       },
-      "/api/groups": {
+      "/api/hobbies": {
         get: {
-          tags: ["Groups"],
+          tags: ["Hobbies"],
           summary: "Get upcoming groups",
           description: "Retrieve upcoming hobby groups (optional hostId filter)",
           responses: {
@@ -292,7 +292,7 @@ export const swaggerConfig = {
           },
         },
         post: {
-          tags: ["Groups"],
+          tags: ["Hobbies"],
           summary: "Create a hobby group",
           description: "Create a meetup (title or legacy subject; category drives factory defaults)",
           requestBody: {
@@ -394,9 +394,9 @@ export const swaggerConfig = {
           },
         },
       },
-      "/api/groups/search": {
+      "/api/hobbies/search": {
         post: {
-          tags: ["Groups"],
+          tags: ["Hobbies"],
           summary: "Search groups",
           description:
             "POST filters + rankingType; uses MongoDB via GroupRepository and SearchMediator",
@@ -459,9 +459,9 @@ export const swaggerConfig = {
           },
         },
       },
-      "/api/groups/{id}": {
+      "/api/hobbies/{id}": {
         get: {
-          tags: ["Groups"],
+          tags: ["Hobbies"],
           summary: "Get group details",
           description: "Get one hobby group by id",
           parameters: [
@@ -500,7 +500,7 @@ export const swaggerConfig = {
           },
         },
         delete: {
-          tags: ["Groups"],
+          tags: ["Hobbies"],
           summary: "Delete a group",
           description: "Host-only — deletes group and related join rows",
           parameters: [
@@ -525,24 +525,28 @@ export const swaggerConfig = {
       "/api/participants": {
         post: {
           tags: ["Participants"],
-          summary: "Request to join a group",
+          summary: "Request to join a hobby meetup",
           description:
-            "Create join request with contact details for the host (MongoDB participants collection)",
+            "Create join request with contact details for the host (MongoDB participants collection, field `hobbyId`)",
           requestBody: {
             required: true,
             content: {
               "application/json": {
                 schema: {
                   type: "object",
-                  required: ["groupId", "userId", "contactEmail", "contactPhone"],
+                  required: ["hobbyId", "userId", "contactEmail", "contactPhone"],
                   properties: {
+                    hobbyId: {
+                      type: "string",
+                      description: "Hobby meetup ID to join",
+                    },
                     groupId: {
                       type: "string",
-                      description: "Group ID to join",
+                      description: "Legacy alias for hobbyId",
                     },
                     sessionId: {
                       type: "string",
-                      description: "Legacy alias for groupId",
+                      description: "Legacy alias for hobbyId",
                     },
                     userId: {
                       type: "string",
@@ -564,6 +568,7 @@ export const swaggerConfig = {
                     type: "object",
                     properties: {
                       id: { type: "string" },
+                      hobbyId: { type: "string" },
                       groupId: { type: "string" },
                       sessionId: { type: "string" },
                       userId: { type: "string" },
@@ -611,6 +616,7 @@ export const swaggerConfig = {
                     type: "object",
                     properties: {
                       id: { type: "string" },
+                      hobbyId: { type: "string" },
                       groupId: { type: "string" },
                       sessionId: { type: "string" },
                       userId: { type: "string" },
@@ -668,9 +674,9 @@ export const swaggerConfig = {
           },
         },
       },
-      "/api/groups/{id}/participants": {
+      "/api/hobbies/{id}/participants": {
         get: {
-          tags: ["Groups"],
+          tags: ["Hobbies"],
           summary: "Get group participants",
           description: "All join rows for a group",
           parameters: [

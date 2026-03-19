@@ -2,17 +2,17 @@ import { randomUUID } from "crypto";
 import type { Document, Filter } from "mongodb";
 import { getMongoDb, COLLECTIONS, byId } from "@/lib/mongo";
 import type {
-  Group,
-  GroupFilters,
-  GroupSearchResult,
+  Hobby,
+  HobbyFilters,
+  HobbySearchResult,
   User,
 } from "@/lib/types";
 import type { BaseRepository } from "./base-repository";
 
-export interface IGroupRepository extends BaseRepository<Group> {
-  findByFilters(filters: GroupFilters): Promise<GroupSearchResult[]>;
-  findByHostId(hostId: string): Promise<Group[]>;
-  findUpcoming(): Promise<Group[]>;
+export interface IHobbyRepository extends BaseRepository<Hobby> {
+  findByFilters(filters: HobbyFilters): Promise<HobbySearchResult[]>;
+  findByHostId(hostId: string): Promise<Hobby[]>;
+  findUpcoming(): Promise<Hobby[]>;
 }
 
 function escapeRegex(s: string): string {
@@ -44,7 +44,7 @@ function startOfTodayUtc(): Date {
   return d;
 }
 
-type GroupDoc = {
+type HobbyDoc = {
   _id: string;
   hostId: string;
   title: string;
@@ -64,9 +64,9 @@ type GroupDoc = {
   location: { type: "Point"; coordinates: [number, number] };
 };
 
-export class MongoGroupRepository implements IGroupRepository {
-  private mapDoc(row: GroupDoc, host?: User | null): Group {
-    const g: Group = {
+export class MongoHobbyRepository implements IHobbyRepository {
+  private mapDoc(row: HobbyDoc, host?: User | null): Hobby {
+    const g: Hobby = {
       id: row._id,
       hostId: row.hostId,
       title: row.title,
@@ -106,24 +106,24 @@ export class MongoGroupRepository implements IGroupRepository {
     };
   }
 
-  async findById(id: string): Promise<Group | null> {
+  async findById(id: string): Promise<Hobby | null> {
     const db = await getMongoDb();
     const row = (await db
-      .collection(COLLECTIONS.groups)
-      .findOne(byId(id))) as GroupDoc | null;
+      .collection(COLLECTIONS.hobbies)
+      .findOne(byId(id))) as HobbyDoc | null;
     if (!row) return null;
     const host = await this.loadHost(row.hostId);
     return this.mapDoc(row, host);
   }
 
-  async findAll(): Promise<Group[]> {
+  async findAll(): Promise<Hobby[]> {
     const db = await getMongoDb();
     const rows = (await db
-      .collection(COLLECTIONS.groups)
+      .collection(COLLECTIONS.hobbies)
       .find({} as unknown as Filter<Document>)
       .sort({ date: 1, startTime: 1 })
-      .toArray()) as unknown as GroupDoc[];
-    const out: Group[] = [];
+      .toArray()) as unknown as HobbyDoc[];
+    const out: Hobby[] = [];
     for (const row of rows) {
       const host = await this.loadHost(row.hostId);
       out.push(this.mapDoc(row, host));
@@ -132,14 +132,14 @@ export class MongoGroupRepository implements IGroupRepository {
   }
 
   async create(
-    data: Omit<Group, "id" | "createdAt" | "updatedAt">
-  ): Promise<Group> {
+    data: Omit<Hobby, "id" | "createdAt" | "updatedAt">
+  ): Promise<Hobby> {
     const db = await getMongoDb();
     const id = randomUUID();
     const now = new Date();
     const lat = data.location.latitude;
     const lng = data.location.longitude;
-    const doc: GroupDoc = {
+    const doc: HobbyDoc = {
       _id: id,
       hostId: data.hostId,
       title: data.title,
@@ -158,13 +158,13 @@ export class MongoGroupRepository implements IGroupRepository {
       updatedAt: now,
       location: { type: "Point", coordinates: [lng, lat] },
     };
-    await db.collection(COLLECTIONS.groups).insertOne(doc as Document);
+    await db.collection(COLLECTIONS.hobbies).insertOne(doc as Document);
     const created = await this.findById(id);
-    if (!created) throw new Error("Failed to create group");
+    if (!created) throw new Error("Failed to create hobby");
     return created;
   }
 
-  async update(id: string, data: Partial<Group>): Promise<Group> {
+  async update(id: string, data: Partial<Hobby>): Promise<Hobby> {
     const db = await getMongoDb();
     const $set: Record<string, unknown> = { updatedAt: new Date() };
 
@@ -188,13 +188,13 @@ export class MongoGroupRepository implements IGroupRepository {
     }
 
     const upd = await db
-      .collection(COLLECTIONS.groups)
+      .collection(COLLECTIONS.hobbies)
       .updateOne(byId(id), { $set });
-    if (upd.matchedCount === 0) throw new Error("Group not found");
+    if (upd.matchedCount === 0) throw new Error("Hobby not found");
     const row = (await db
-      .collection(COLLECTIONS.groups)
-      .findOne(byId(id))) as GroupDoc | null;
-    if (!row) throw new Error("Group not found");
+      .collection(COLLECTIONS.hobbies)
+      .findOne(byId(id))) as HobbyDoc | null;
+    if (!row) throw new Error("Hobby not found");
     const host = await this.loadHost(row.hostId);
     return this.mapDoc(row, host);
   }
@@ -202,13 +202,13 @@ export class MongoGroupRepository implements IGroupRepository {
   async delete(id: string): Promise<void> {
     const db = await getMongoDb();
     await db
-      .collection(COLLECTIONS.groups)
+      .collection(COLLECTIONS.hobbies)
       .deleteOne(byId(id));
   }
 
-  async findByFilters(filters: GroupFilters): Promise<GroupSearchResult[]> {
+  async findByFilters(filters: HobbyFilters): Promise<HobbySearchResult[]> {
     const db = await getMongoDb();
-    const coll = db.collection(COLLECTIONS.groups);
+    const coll = db.collection(COLLECTIONS.hobbies);
 
     const match: Record<string, unknown> = {
       date: { $gte: startOfTodayUtc() },
@@ -243,7 +243,7 @@ export class MongoGroupRepository implements IGroupRepository {
       filters.maxDistance != null &&
       filters.maxDistance > 0;
 
-    let rows: GroupDoc[];
+    let rows: HobbyDoc[];
 
     if (useGeoNear) {
       const { latitude, longitude } = filters.userLocation!;
@@ -263,31 +263,31 @@ export class MongoGroupRepository implements IGroupRepository {
       ];
       rows = (await coll
         .aggregate(pipeline)
-        .toArray()) as unknown as GroupDoc[];
+        .toArray()) as unknown as HobbyDoc[];
     } else {
       rows = (await coll
         .find(match as unknown as Filter<Document>)
         .sort({ date: 1, startTime: 1 })
-        .toArray()) as unknown as GroupDoc[];
+        .toArray()) as unknown as HobbyDoc[];
     }
 
-    const sessionIds = rows.map((r) => r._id);
-    const participantsByGroup: Record<string, import("@/lib/types").GroupParticipant[]> =
+    const hobbyIds = rows.map((r) => r._id);
+    const participantsByHobby: Record<string, import("@/lib/types").HobbyParticipant[]> =
       {};
 
-    if (sessionIds.length > 0) {
+    if (hobbyIds.length > 0) {
       const participantRows = await db
         .collection(COLLECTIONS.participants)
-        .find({ groupId: { $in: sessionIds } } as unknown as Filter<Document>)
+        .find({ hobbyId: { $in: hobbyIds } } as unknown as Filter<Document>)
         .toArray();
 
       for (const p of participantRows) {
         const doc = p as Document;
-        const gid = String(doc.groupId);
-        if (!participantsByGroup[gid]) participantsByGroup[gid] = [];
-        participantsByGroup[gid].push({
+        const hid = String(doc.hobbyId);
+        if (!participantsByHobby[hid]) participantsByHobby[hid] = [];
+        participantsByHobby[hid].push({
           id: String(doc._id),
-          groupId: gid,
+          hobbyId: hid,
           userId: String(doc.userId),
           contactEmail: doc.contactEmail as string | undefined,
           contactPhone: doc.contactPhone as string | undefined,
@@ -300,12 +300,12 @@ export class MongoGroupRepository implements IGroupRepository {
       }
     }
 
-    let results: GroupSearchResult[] = [];
+    let results: HobbySearchResult[] = [];
 
     for (const row of rows) {
       const host = await this.loadHost(row.hostId);
       const session = this.mapDoc(row, host);
-      const parts = participantsByGroup[row._id] || [];
+      const parts = participantsByHobby[row._id] || [];
       session.participants = parts;
 
       let distance: number | undefined;
@@ -317,12 +317,12 @@ export class MongoGroupRepository implements IGroupRepository {
           row.longitude
         );
       }
-      const rowWithGeo = row as GroupDoc & { geoDistanceM?: number };
+      const rowWithGeo = row as HobbyDoc & { geoDistanceM?: number };
       if (rowWithGeo.geoDistanceM != null) {
         distance = rowWithGeo.geoDistanceM / 1000;
       }
 
-      const r: GroupSearchResult = { ...session, distance };
+      const r: HobbySearchResult = { ...session, distance };
       results.push(r);
     }
 
@@ -336,14 +336,14 @@ export class MongoGroupRepository implements IGroupRepository {
     return results;
   }
 
-  async findByHostId(hostId: string): Promise<Group[]> {
+  async findByHostId(hostId: string): Promise<Hobby[]> {
     const db = await getMongoDb();
     const rows = (await db
-      .collection(COLLECTIONS.groups)
+      .collection(COLLECTIONS.hobbies)
       .find({ hostId } as unknown as Filter<Document>)
       .sort({ date: -1, startTime: -1 })
-      .toArray()) as unknown as GroupDoc[];
-    const out: Group[] = [];
+      .toArray()) as unknown as HobbyDoc[];
+    const out: Hobby[] = [];
     for (const row of rows) {
       const host = await this.loadHost(row.hostId);
       out.push(this.mapDoc(row, host));
@@ -351,14 +351,14 @@ export class MongoGroupRepository implements IGroupRepository {
     return out;
   }
 
-  async findUpcoming(): Promise<Group[]> {
+  async findUpcoming(): Promise<Hobby[]> {
     const db = await getMongoDb();
     const rows = (await db
-      .collection(COLLECTIONS.groups)
+      .collection(COLLECTIONS.hobbies)
       .find({ date: { $gte: startOfTodayUtc() } } as unknown as Filter<Document>)
       .sort({ date: 1, startTime: 1 })
-      .toArray()) as unknown as GroupDoc[];
-    const out: Group[] = [];
+      .toArray()) as unknown as HobbyDoc[];
+    const out: Hobby[] = [];
     for (const row of rows) {
       const host = await this.loadHost(row.hostId);
       out.push(this.mapDoc(row, host));
@@ -367,11 +367,17 @@ export class MongoGroupRepository implements IGroupRepository {
   }
 }
 
-let groupRepository: IGroupRepository | null = null;
+let hobbyRepository: IHobbyRepository | null = null;
 
-export function getGroupRepository(): IGroupRepository {
-  if (!groupRepository) {
-    groupRepository = new MongoGroupRepository();
+export function getHobbyRepository(): IHobbyRepository {
+  if (!hobbyRepository) {
+    hobbyRepository = new MongoHobbyRepository();
   }
-  return groupRepository;
+  return hobbyRepository;
 }
+
+/** @deprecated Use getHobbyRepository */
+export const getGroupRepository = getHobbyRepository;
+
+/** @deprecated Use IHobbyRepository */
+export type IGroupRepository = IHobbyRepository;

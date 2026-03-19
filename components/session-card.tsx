@@ -70,7 +70,7 @@ export function SessionCard({
           className="w-full mt-2 bg-primary/10 text-primary border-primary/30 cursor-default"
         >
           <UserCircle className="h-4 w-4 mr-2" />
-          My Session
+          My meetup
         </Button>
       );
     }
@@ -84,7 +84,7 @@ export function SessionCard({
           className="w-full mt-2 bg-blue-50 text-blue-800 border-blue-200 cursor-not-allowed"
         >
           <CheckCircle2 className="h-4 w-4 mr-2" />
-          Session Completed
+          Meetup completed
         </Button>
       );
     }
@@ -141,7 +141,7 @@ export function SessionCard({
         className="w-full mt-2 bg-primary hover:bg-primary/90 transition-all hover:-translate-y-0.5 shadow-md hover:shadow-lg"
         disabled={isFull}
       >
-        {isFull ? "Session Full" : "Request to Join"}
+        {isFull ? "Meetup full" : "Request to join"}
       </Button>
     );
   };
@@ -164,7 +164,7 @@ export function SessionCard({
               {isMySession && (
                 <Badge className="bg-primary/20 text-primary border-primary/30">
                   <UserCircle className="h-3 w-3 mr-1" />
-                  My Session
+                  My meetup
                 </Badge>
               )}
               {isPast && (

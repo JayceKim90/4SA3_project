@@ -1,6 +1,6 @@
 "use client";
 
-import { groupTitle, type StudySession } from "@/lib/types";
+import { hobbyTitle, type Hobby } from "@/lib/types";
 import {
   Card,
   CardContent,
@@ -34,13 +34,13 @@ import { format } from "date-fns";
 import Link from "next/link";
 
 interface MySessionsListProps {
-  sessions: StudySession[];
+  sessions: Hobby[];
   onDelete?: (sessionId: string) => void;
 }
 
 export function MySessionsList({ sessions, onDelete }: MySessionsListProps) {
 
-  const isSessionPast = (session: StudySession): boolean => {
+  const isSessionPast = (session: Hobby): boolean => {
     const sessionDate = new Date(session.date);
     const [hours, minutes] = session.endTime.split(":").map(Number);
     const endDateTime = new Date(sessionDate);
@@ -54,11 +54,11 @@ export function MySessionsList({ sessions, onDelete }: MySessionsListProps) {
     return (
       <div className="text-center py-12">
         <p className="text-muted-foreground">
-          You haven't created any sessions yet
+          You haven&apos;t created any hobby meetups yet
         </p>
         <Link href="/create">
           <Button className="mt-4 bg-primary hover:bg-primary/90">
-            Create Your First Session
+            Host your first hobby meetup
           </Button>
         </Link>
       </div>
@@ -90,7 +90,7 @@ export function MySessionsList({ sessions, onDelete }: MySessionsListProps) {
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <CardTitle className="text-balance text-primary">
-                      {groupTitle(session)}
+                      {hobbyTitle(session)}
                     </CardTitle>
                     {isPast && (
                       <Badge className="bg-blue-500/20 text-blue-800 border-blue-500/30">
@@ -105,7 +105,7 @@ export function MySessionsList({ sessions, onDelete }: MySessionsListProps) {
                 </div>
                 <div className="flex gap-2">
                   {!isPast ? (
-                    <Link href={`/sessions/${session.id}/manage`}>
+                    <Link href={`/hobbies/${session.id}/manage`}>
                       <Button
                         variant="outline"
                         size="sm"
@@ -139,9 +139,9 @@ export function MySessionsList({ sessions, onDelete }: MySessionsListProps) {
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Session</AlertDialogTitle>
+                          <AlertDialogTitle>Delete meetup</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Are you sure you want to delete "{groupTitle(session)}"?
+                            Are you sure you want to delete "{hobbyTitle(session)}"?
                             This action cannot be undone. All participants will
                             be notified.
                           </AlertDialogDescription>

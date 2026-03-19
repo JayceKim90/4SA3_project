@@ -35,7 +35,7 @@ export default function DiscoverPage() {
     useState<RankingType>("relevance");
   const [focusedSessionId, setFocusedSessionId] = useState<string | null>(null);
   const [joinOpen, setJoinOpen] = useState(false);
-  const [pendingGroupId, setPendingGroupId] = useState<string | null>(null);
+  const [pendingHobbyId, setPendingHobbyId] = useState<string | null>(null);
   const [contactEmail, setContactEmail] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [userEmail, setUserEmail] = useState("");
@@ -55,8 +55,12 @@ export default function DiscoverPage() {
       .catch((err) => console.error("Failed to fetch user:", err));
 
     const mediator = getSessionMediator();
-    mediator.registerComponent("discover-page", (event, data) => {
-      if (event === "session:created" || event === "session:updated") {
+    mediator.registerComponent("discover-page", (event, data) => {      if (
+        event === "hobby:created" ||
+        event === "hobby:updated" ||
+        event === "session:created" ||
+        event === "session:updated"
+      ) {
         loadSessions({}, "relevance");
       }
     });
@@ -74,7 +78,7 @@ export default function DiscoverPage() {
     setCurrentRanking(rankingType);
     setIsLoading(true);
     try {
-      const response = await fetch("/api/groups/search", {
+      const response = await fetch("/api/hobbies/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ filters, rankingType }),
@@ -96,23 +100,23 @@ export default function DiscoverPage() {
     }
   };
 
-  const handleJoinRequest = (groupId: string) => {
+  const handleJoinRequest = (hobbyId: string) => {
     if (!userId) {
       toast({
         title: "Error",
-        description: "You must be logged in to join a group",
+        description: "You must be logged in to join a hobby meetup",
         variant: "destructive",
       });
       return;
     }
-    setPendingGroupId(groupId);
+    setPendingHobbyId(hobbyId);
     setContactEmail(userEmail || "");
     setContactPhone("");
     setJoinOpen(true);
   };
 
   const submitJoinRequest = async () => {
-    if (!userId || !pendingGroupId) return;
+    if (!userId || !pendingHobbyId) return;
     if (!contactEmail.trim() || !contactPhone.trim()) {
       toast({
         title: "Missing contact",
@@ -127,7 +131,7 @@ export default function DiscoverPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          groupId: pendingGroupId,
+          hobbyId: pendingHobbyId,
           userId,
           contactEmail: contactEmail.trim(),
           contactPhone: contactPhone.trim(),
@@ -145,11 +149,11 @@ export default function DiscoverPage() {
       });
 
       setJoinOpen(false);
-      setPendingGroupId(null);
+      setPendingHobbyId(null);
       loadSessions(currentFilters, currentRanking);
 
       const mediator = getSessionMediator();
-      mediator.notifyParticipantStatusChanged(pendingGroupId, userId, "pending");
+      mediator.notifyParticipantStatusChanged(pendingHobbyId, userId, "pending");
     } catch (error) {
       console.error("[HobbyHop] Error requesting to join:", error);
       toast({
@@ -168,7 +172,7 @@ export default function DiscoverPage() {
       const response = await fetch("/api/participants", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ groupId: sessionId, userId }),
+        body: JSON.stringify({ hobbyId: sessionId, userId }),
       });
 
       if (!response.ok) throw new Error("Failed to cancel request");
@@ -277,7 +281,7 @@ export default function DiscoverPage() {
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-lg font-semibold text-primary flex items-center gap-2">
                   <span className="inline-block w-1 h-6 bg-primary rounded-full animate-pulse" />
-                  Groups ({sessions.length})
+                  Meetups ({sessions.length})
                 </h2>
               </div>
               {isLoading ? (
@@ -286,7 +290,7 @@ export default function DiscoverPage() {
                     <div className="h-12 w-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div>
                     <div className="absolute inset-0 h-12 w-12 border-4 border-transparent border-t-primary/50 rounded-full animate-spin mb-4" style={{ animationDuration: '0.75s', animationDirection: 'reverse' }}></div>
                   </div>
-                  <p className="text-muted-foreground font-medium">Loading groups...</p>
+                  <p className="text-muted-foreground font-medium">Loading meetups...</p>
                   <p className="text-sm text-muted-foreground/70 mt-2">Finding meetups for you</p>
                 </div>
               ) : sessions.length === 0 ? (
@@ -299,7 +303,7 @@ export default function DiscoverPage() {
                     </div>
                   </div>
                   <p className="text-lg font-semibold text-foreground mb-2">
-                    No groups found
+                    No meetups found
                   </p>
                   <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
                     Try adjusting your filters or create the first meetup

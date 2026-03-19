@@ -1,12 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { getGroupRepository } from "@/lib/repository/group-repository";
-import { buildGroupForCreate } from "@/lib/factories/group-factory";
+import { getHobbyRepository } from "@/lib/repository/group-repository";
+import { buildHobbyForCreate } from "@/lib/factories/group-factory";
 
 const TITLES = [
   "Weekend nature photography walk",
   "Acoustic guitar circle",
   "Board game night",
-  "Beginner Python study",
+  "Beginner Python hobby coding circle",
   "Community yoga in the park",
   "Watercolor sketching meetup",
   "Running crew — easy pace",
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
       searchParams.get("hostId") ||
       "1ee0edfe-ddc6-4aef-aa3e-3c5e0cd2088e";
 
-    const groupRepo = getGroupRepository();
+    const hobbyRepo = getHobbyRepository();
     const created = [];
 
     for (let i = 0; i < count; i++) {
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
         selectedTags.push(TAGS[Math.floor(Math.random() * TAGS.length)]);
       }
 
-      const draft = buildGroupForCreate({
+      const draft = buildHobbyForCreate({
         hostId,
         title,
         category,
@@ -106,13 +106,14 @@ export async function POST(request: NextRequest) {
         description: `HobbyHop seed meetup — ${title}. Open to new members.`,
       });
 
-      const group = await groupRepo.create(draft);
-      created.push(group);
+      const hobby = await hobbyRepo.create(draft);
+      created.push(hobby);
     }
 
     return NextResponse.json({
-      message: `Successfully created ${created.length} groups`,
+      message: `Successfully created ${created.length} hobby meetups`,
       sessions: created,
+      hobbies: created,
       groups: created,
     });
   } catch (error) {

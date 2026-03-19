@@ -1,31 +1,31 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { getGroupRepository } from "@/lib/repository/group-repository";
+import { getHobbyRepository } from "@/lib/repository/group-repository";
 import { getParticipantRepository } from "@/lib/repository/participant-repository";
 import { getSessionMediator } from "@/lib/mediator/session-mediator";
-import { buildGroupForCreate } from "@/lib/factories/group-factory";
+import { buildHobbyForCreate } from "@/lib/factories/group-factory";
 export async function GET(request: NextRequest) {
   try {
-    const groupRepo = getGroupRepository();
+    const hobbyRepo = getHobbyRepository();
     const { searchParams } = new URL(request.url);
     const hostId = searchParams.get("hostId");
 
-    const groups = hostId
-      ? await groupRepo.findByHostId(hostId)
-      : await groupRepo.findUpcoming();
+    const hobbies = hostId
+      ? await hobbyRepo.findByHostId(hostId)
+      : await hobbyRepo.findUpcoming();
 
     const participantRepo = getParticipantRepository();
-    const groupsWithParticipants = await Promise.all(
-      groups.map(async (g) => {
-        const participants = await participantRepo.findByGroupId(g.id);
-        return { ...g, participants };
+    const hobbiesWithParticipants = await Promise.all(
+      hobbies.map(async (h) => {
+        const participants = await participantRepo.findByHobbyId(h.id);
+        return { ...h, participants };
       })
     );
 
-    return NextResponse.json(groupsWithParticipants);
+    return NextResponse.json(hobbiesWithParticipants);
   } catch (error) {
-    console.error("[HobbyHop] Error fetching groups:", error);
+    console.error("[HobbyHop] Error fetching hobbies:", error);
     return NextResponse.json(
-      { error: "Failed to fetch groups" },
+      { error: "Failed to fetch hobbies" },
       { status: 500 }
     );
   }
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
       placeId: geocodeData.placeId,
     };
 
-    const draft = buildGroupForCreate({
+    const draft = buildHobbyForCreate({
       hostId,
       title,
       subject,
@@ -127,17 +127,17 @@ export async function POST(request: NextRequest) {
       description,
     });
 
-    const groupRepo = getGroupRepository();
-    const group = await groupRepo.create(draft);
+    const hobbyRepo = getHobbyRepository();
+    const hobby = await hobbyRepo.create(draft);
 
     const mediator = getSessionMediator();
-    mediator.notifySessionCreated(group.id);
+    mediator.notifySessionCreated(hobby.id);
 
-    return NextResponse.json(group, { status: 201 });
+    return NextResponse.json(hobby, { status: 201 });
   } catch (error) {
-    console.error("[HobbyHop] Error creating group:", error);
+    console.error("[HobbyHop] Error creating hobby:", error);
     return NextResponse.json(
-      { error: "Failed to create group" },
+      { error: "Failed to create hobby meetup" },
       { status: 500 }
     );
   }

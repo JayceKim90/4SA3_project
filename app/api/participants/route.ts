@@ -1,22 +1,26 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { getParticipantRepository } from "@/lib/repository/participant-repository";
 
-function resolveGroupId(body: Record<string, unknown>): string | undefined {
-  const gid = body.groupId ?? body.sessionId;
-  return typeof gid === "string" ? gid : undefined;
+function resolveHobbyId(body: Record<string, unknown>): string | undefined {
+  const hid =
+    body.hobbyId ?? body.groupId ?? body.sessionId;
+  return typeof hid === "string" ? hid : undefined;
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const groupId = resolveGroupId(body);
+    const hobbyId = resolveHobbyId(body);
     const userId = body.userId as string | undefined;
     const contactEmail = (body.contactEmail as string | undefined)?.trim();
     const contactPhone = (body.contactPhone as string | undefined)?.trim();
 
-    if (!groupId || !userId) {
+    if (!hobbyId || !userId) {
       return NextResponse.json(
-        { error: "Missing required fields: groupId (or sessionId), userId" },
+        {
+          error:
+            "Missing required fields: hobbyId (or legacy groupId/sessionId), userId",
+        },
         { status: 400 }
       );
     }
@@ -30,18 +34,18 @@ export async function POST(request: NextRequest) {
 
     const participantRepo = getParticipantRepository();
 
-    const existing = await participantRepo.findByGroupId(groupId);
+    const existing = await participantRepo.findByHobbyId(hobbyId);
     const alreadyRequested = existing.some((p) => p.userId === userId);
 
     if (alreadyRequested) {
       return NextResponse.json(
-        { error: "Already requested to join this group" },
+        { error: "Already requested to join this meetup" },
         { status: 400 }
       );
     }
 
     const participant = await participantRepo.create({
-      groupId,
+      hobbyId,
       userId,
       contactEmail,
       contactPhone,
@@ -51,7 +55,8 @@ export async function POST(request: NextRequest) {
 
     const json = {
       ...participant,
-      sessionId: participant.groupId,
+      sessionId: participant.hobbyId,
+      groupId: participant.hobbyId,
     };
 
     return NextResponse.json(json, { status: 201 });
@@ -67,10 +72,10 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const body = await request.json();
-    const groupId = resolveGroupId(body);
+    const hobbyId = resolveHobbyId(body);
     const userId = body.userId as string | undefined;
 
-    if (!groupId || !userId) {
+    if (!hobbyId || !userId) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -78,7 +83,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     const participantRepo = getParticipantRepository();
-    const existing = await participantRepo.findByGroupId(groupId);
+    const existing = await participantRepo.findByHobbyId(hobbyId);
     const participant = existing.find((p) => p.userId === userId);
 
     if (!participant) {

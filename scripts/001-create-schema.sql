@@ -1,5 +1,4 @@
--- PostgreSQL Schema for HobbyHop
--- Run this script when database integration is added
+-- PostgreSQL reference schema for HobbyHop (optional; app uses MongoDB by default)
 
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
@@ -10,8 +9,8 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Study sessions table
-CREATE TABLE IF NOT EXISTS study_sessions (
+-- Hobby meetups (replaces legacy study_sessions)
+CREATE TABLE IF NOT EXISTS hobby_sessions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   host_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   subject VARCHAR(255) NOT NULL,
@@ -29,28 +28,25 @@ CREATE TABLE IF NOT EXISTS study_sessions (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Session participants table
-CREATE TABLE IF NOT EXISTS session_participants (
+CREATE TABLE IF NOT EXISTS hobby_participants (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  session_id UUID NOT NULL REFERENCES study_sessions(id) ON DELETE CASCADE,
+  hobby_id UUID NOT NULL REFERENCES hobby_sessions(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   status VARCHAR(20) NOT NULL CHECK (status IN ('pending', 'approved', 'rejected')),
   requested_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   responded_at TIMESTAMP WITH TIME ZONE,
-  UNIQUE(session_id, user_id)
+  UNIQUE(hobby_id, user_id)
 );
 
--- Indexes for performance
-CREATE INDEX IF NOT EXISTS idx_sessions_host ON study_sessions(host_id);
-CREATE INDEX IF NOT EXISTS idx_sessions_date ON study_sessions(date);
-CREATE INDEX IF NOT EXISTS idx_sessions_subject ON study_sessions(subject);
-CREATE INDEX IF NOT EXISTS idx_sessions_latitude ON study_sessions(latitude);
-CREATE INDEX IF NOT EXISTS idx_sessions_longitude ON study_sessions(longitude);
-CREATE INDEX IF NOT EXISTS idx_participants_session ON session_participants(session_id);
-CREATE INDEX IF NOT EXISTS idx_participants_user ON session_participants(user_id);
-CREATE INDEX IF NOT EXISTS idx_participants_status ON session_participants(status);
+CREATE INDEX IF NOT EXISTS idx_hobby_sessions_host ON hobby_sessions(host_id);
+CREATE INDEX IF NOT EXISTS idx_hobby_sessions_date ON hobby_sessions(date);
+CREATE INDEX IF NOT EXISTS idx_hobby_sessions_subject ON hobby_sessions(subject);
+CREATE INDEX IF NOT EXISTS idx_hobby_sessions_latitude ON hobby_sessions(latitude);
+CREATE INDEX IF NOT EXISTS idx_hobby_sessions_longitude ON hobby_sessions(longitude);
+CREATE INDEX IF NOT EXISTS idx_hobby_participants_hobby ON hobby_participants(hobby_id);
+CREATE INDEX IF NOT EXISTS idx_hobby_participants_user ON hobby_participants(user_id);
+CREATE INDEX IF NOT EXISTS idx_hobby_participants_status ON hobby_participants(status);
 
--- Function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -59,8 +55,7 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
--- Trigger to automatically update updated_at
-CREATE TRIGGER update_study_sessions_updated_at
-  BEFORE UPDATE ON study_sessions
+CREATE TRIGGER update_hobby_sessions_updated_at
+  BEFORE UPDATE ON hobby_sessions
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();

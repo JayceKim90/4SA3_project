@@ -8,7 +8,7 @@ export async function GET(
   try {
     const { id } = await params;
     const participantRepo = getParticipantRepository();
-    const participants = await participantRepo.findByGroupId(id);
+    const participants = await participantRepo.findByHobbyId(id);
 
     return NextResponse.json(participants);
   } catch (error) {

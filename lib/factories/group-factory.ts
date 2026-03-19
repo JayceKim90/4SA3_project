@@ -1,4 +1,4 @@
-import type { Group, Location } from "@/lib/types";
+import type { Hobby, Location } from "@/lib/types";
 
 export type HobbyCategory = "sports" | "music" | "education" | "general";
 
@@ -36,7 +36,7 @@ function normalizeCategory(raw?: string): HobbyCategory {
   return "general";
 }
 
-export type CreateGroupInput = {
+export type CreateHobbyInput = {
   hostId: string;
   title?: string;
   subject?: string;
@@ -51,10 +51,10 @@ export type CreateGroupInput = {
 };
 
 /**
- * Factory: 카테고리별 기본 설명·태그를 채운 그룹 생성 페이로드 (Controller는 분기 없이 이 함수만 호출)
+ * Factory: 카테고리별 기본 설명·태그를 채운 취미 모임 생성 페이로드
  */
-export function buildGroupForCreate(input: CreateGroupInput): Omit<
-  Group,
+export function buildHobbyForCreate(input: CreateHobbyInput): Omit<
+  Hobby,
   "id" | "createdAt" | "updatedAt"
 > {
   const cat = normalizeCategory(input.category);
@@ -79,3 +79,8 @@ export function buildGroupForCreate(input: CreateGroupInput): Omit<
     description,
   };
 }
+
+/** @deprecated Use buildHobbyForCreate */
+export type CreateGroupInput = CreateHobbyInput;
+/** @deprecated Use buildHobbyForCreate */
+export const buildGroupForCreate = buildHobbyForCreate;

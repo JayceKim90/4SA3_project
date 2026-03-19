@@ -59,12 +59,12 @@ export default async function HomePage() {
                       Discover
                     </Button>
                   </Link>
-                  <Link href="/my-sessions">
+                  <Link href="/my-hobbies">
                     <Button
                       variant="ghost"
                       className="hover:bg-primary/10 transition-all"
                     >
-                      My Sessions
+                      My hobbies
                     </Button>
                   </Link>
                   <Link href="/profile">
@@ -77,7 +77,7 @@ export default async function HomePage() {
                   </Link>
                   <Link href="/create">
                     <Button className="bg-primary hover:bg-primary/90 transition-all shadow-lg hover:shadow-xl">
-                      Create Session
+                      Host a hobby
                     </Button>
                   </Link>
                   <LogoutButton />
@@ -110,12 +110,11 @@ export default async function HomePage() {
             HobbyHop
           </div>
           <h2 className="text-5xl md:text-6xl font-bold mb-6 text-balance bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent tracking-tight">
-            Find Your Perfect Study Group
+            Find Your Perfect Hobby Circle
           </h2>
           <p className="text-xl text-muted-foreground text-pretty leading-relaxed mb-8 max-w-2xl mx-auto">
-            Connect with peers, create study sessions, and discover groups by
-            subject and location. Make studying more effective and
-            collaborative.
+            Connect with locals, host hobby meetups, and discover groups by
+            interest and location. Make hobbies more social and fun together.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center animate-in fade-in duration-1000 delay-300">
             {isLoggedIn ? (
@@ -125,7 +124,7 @@ export default async function HomePage() {
                     size="lg"
                     className="w-full sm:w-auto bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 text-lg px-8"
                   >
-                    Browse Sessions
+                    Browse meetups
                   </Button>
                 </Link>
                 <Link href="/create">
@@ -134,7 +133,7 @@ export default async function HomePage() {
                     variant="outline"
                     className="w-full sm:w-auto border-primary/20 hover:bg-primary/10 transition-all hover:-translate-y-1 text-lg px-8"
                   >
-                    Host a Session
+                    Host a hobby meetup
                   </Button>
                 </Link>
               </>
@@ -168,11 +167,11 @@ export default async function HomePage() {
               <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
                 <BookOpen className="h-6 w-6 text-primary" />
               </div>
-              <CardTitle>By Subject</CardTitle>
+              <CardTitle>By interest</CardTitle>
             </CardHeader>
             <CardContent>
               <CardDescription>
-                Find study groups for your specific courses and topics
+                Find hobby groups that match your interests and passions
               </CardDescription>
             </CardContent>
           </Card>
@@ -186,7 +185,7 @@ export default async function HomePage() {
             </CardHeader>
             <CardContent>
               <CardDescription>
-                Discover sessions close to you with map and list views
+                Discover hobby meetups near you on the map and in the list
               </CardDescription>
             </CardContent>
           </Card>
@@ -196,11 +195,11 @@ export default async function HomePage() {
               <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
                 <Users className="h-6 w-6 text-primary" />
               </div>
-              <CardTitle>Join Groups</CardTitle>
+              <CardTitle>Join in</CardTitle>
             </CardHeader>
             <CardContent>
               <CardDescription>
-                Request to join sessions and get approved by hosts
+                Request to join meetups and get approved by hosts
               </CardDescription>
             </CardContent>
           </Card>
@@ -224,7 +223,7 @@ export default async function HomePage() {
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-4">How It Works</h2>
             <p className="text-muted-foreground">
-              Simple steps to get started with your study journey
+              Simple steps to get started with your hobby journey
             </p>
           </div>
 
@@ -239,7 +238,7 @@ export default async function HomePage() {
                 <h3 className="text-xl font-semibold mb-2">Sign Up</h3>
                 <p className="text-muted-foreground">
                   Create your account to access all features and manage your
-                  sessions.
+                  hobby meetups.
                 </p>
               </div>
 
@@ -249,8 +248,7 @@ export default async function HomePage() {
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Discover</h3>
                 <p className="text-muted-foreground">
-                  Browse the map or list to find study sessions that match your
-                  needs.
+                  Browse the map or list to find hobby meetups that fit you.
                 </p>
               </div>
 
@@ -258,7 +256,7 @@ export default async function HomePage() {
                 <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4 text-primary font-bold text-xl group-hover:bg-primary/20 transition-colors">
                   3
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Join & Study</h3>
+                <h3 className="text-xl font-semibold mb-2">Join & enjoy</h3>
                 <p className="text-muted-foreground">
                   Request to join a group, get approved, and start collaborating!
                 </p>

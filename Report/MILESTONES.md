@@ -6,4 +6,4 @@
 
 - **스택:** Next.js, TypeScript, MongoDB, Google Maps  
 - **패턴:** `GroupFactory`, `SearchMediator` (`executeGroupSearch`), `GroupRepository` / `MongoParticipantRepository`  
-- **주요 API:** `/api/groups`, `/api/groups/search`, `/api/groups/[id]`, `/api/participants` (연락처 필수)  
+- **주요 API:** `/api/hobbies`, `/api/hobbies/search`, `/api/hobbies/[id]`, `/api/participants` (`hobbyId`, 연락처 필수)  

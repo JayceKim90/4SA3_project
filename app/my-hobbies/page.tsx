@@ -6,11 +6,11 @@ import { Button } from "@/components/ui/button";
 import { MySessionsList } from "@/components/my-sessions-list";
 import { LogoutButton } from "@/components/logout-button";
 import { ArrowLeft, Plus } from "lucide-react";
-import type { StudySession } from "@/lib/types";
+import type { Hobby } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 
-export default function MySessionsPage() {
-  const [sessions, setSessions] = useState<StudySession[]>([]);
+export default function MyHobbiesPage() {
+  const [sessions, setSessions] = useState<Hobby[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -19,7 +19,7 @@ export default function MySessionsPage() {
       .then((res) => res.json())
       .then((data) => {
         if (data.user) {
-          loadMySessions(data.user.id);
+          loadMyHobbies(data.user.id);
         } else {
           setIsLoading(false);
         }
@@ -30,19 +30,19 @@ export default function MySessionsPage() {
       });
   }, []);
 
-  const loadMySessions = async (userId: string) => {
+  const loadMyHobbies = async (userId: string) => {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/groups?hostId=${userId}`);
-      if (!response.ok) throw new Error("Failed to load sessions");
+      const response = await fetch(`/api/hobbies?hostId=${userId}`);
+      if (!response.ok) throw new Error("Failed to load hobbies");
 
       const data = await response.json();
       setSessions(data);
     } catch (error) {
-      console.error("[v0] Error loading sessions:", error);
+      console.error("[v0] Error loading hobbies:", error);
       toast({
         title: "Error",
-        description: "Failed to load your sessions",
+        description: "Failed to load your hobby meetups",
         variant: "destructive",
       });
     } finally {
@@ -52,35 +52,34 @@ export default function MySessionsPage() {
 
   const handleDeleteSession = async (sessionId: string) => {
     try {
-      const response = await fetch(`/api/groups/${sessionId}`, {
+      const response = await fetch(`/api/hobbies/${sessionId}`, {
         method: "DELETE",
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to delete session");
+        throw new Error(errorData.error || "Failed to delete meetup");
       }
 
       toast({
-        title: "Session Deleted",
-        description: "The session has been successfully deleted",
+        title: "Meetup deleted",
+        description: "Your hobby meetup has been removed",
       });
-
 
       fetch("/api/auth/me")
         .then((res) => res.json())
         .then((data) => {
           if (data.user) {
-            loadMySessions(data.user.id);
+            loadMyHobbies(data.user.id);
           }
         })
         .catch((err) => console.error("Failed to fetch user:", err));
     } catch (error) {
-      console.error("[v0] Error deleting session:", error);
+      console.error("[v0] Error deleting hobby:", error);
       toast({
         title: "Error",
         description:
-          error instanceof Error ? error.message : "Failed to delete session",
+          error instanceof Error ? error.message : "Failed to delete meetup",
         variant: "destructive",
       });
     }
@@ -111,14 +110,14 @@ export default function MySessionsPage() {
                 </Button>
               </Link>
               <h1 className="text-xl font-semibold text-primary">
-                My Sessions
+                My hobbies
               </h1>
             </div>
             <div className="flex gap-2 animate-in fade-in slide-in-from-right duration-700">
               <Link href="/create">
                 <Button className="bg-primary hover:bg-primary/90 transition-all shadow-lg hover:shadow-xl">
                   <Plus className="h-4 w-4 mr-2" />
-                  Create Session
+                  Host a hobby
                 </Button>
               </Link>
               <LogoutButton />
@@ -131,7 +130,7 @@ export default function MySessionsPage() {
         {isLoading ? (
           <div className="text-center py-12 animate-pulse">
             <div className="inline-block h-8 w-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div>
-            <p className="text-muted-foreground">Loading your sessions...</p>
+            <p className="text-muted-foreground">Loading your hobby meetups...</p>
           </div>
         ) : (
           <div className="animate-in fade-in slide-in-from-bottom duration-700">

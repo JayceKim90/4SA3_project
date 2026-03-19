@@ -65,11 +65,11 @@ export function CreateSessionForm({ onSuccess }: CreateSessionFormProps) {
         if (data.user?.id) {
           setUserId(data.user.id);
         } else {
-          setError("Please log in to create a session");
+          setError("Please log in to create a hobby meetup");
         }
       } catch (err) {
         console.error("Failed to fetch user:", err);
-        setError("Please log in to create a session");
+        setError("Please log in to create a hobby meetup");
       }
     };
     fetchUser();
@@ -96,7 +96,7 @@ export function CreateSessionForm({ onSuccess }: CreateSessionFormProps) {
 
     try {
       if (!userId) {
-        setError("Please log in to create a session");
+        setError("Please log in to create a hobby meetup");
         setIsSubmitting(false);
         return;
       }
@@ -109,7 +109,7 @@ export function CreateSessionForm({ onSuccess }: CreateSessionFormProps) {
         return;
       }
 
-      const response = await fetch("/api/groups", {
+      const response = await fetch("/api/hobbies", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -160,7 +160,7 @@ export function CreateSessionForm({ onSuccess }: CreateSessionFormProps) {
   return (
     <Card className="w-full max-w-2xl">
       <CardHeader>
-        <CardTitle className="text-balance">Create a hobby group</CardTitle>
+        <CardTitle className="text-balance">Host a hobby meetup</CardTitle>
         <CardDescription>
           Host a meetup and invite people nearby
         </CardDescription>
@@ -293,7 +293,7 @@ export function CreateSessionForm({ onSuccess }: CreateSessionFormProps) {
             <LocationInput
               value={address}
               onChange={handleLocationChange}
-              placeholder="e.g., Main Library, Study Room 301"
+              placeholder="e.g., Community center, Studio room 301"
             />
             <p className="text-sm text-muted-foreground">
               Enter a specific location on campus
@@ -311,7 +311,7 @@ export function CreateSessionForm({ onSuccess }: CreateSessionFormProps) {
             <Label htmlFor="description">Description (Optional)</Label>
             <Textarea
               id="description"
-              placeholder="What will you be studying? Any materials needed?"
+              placeholder="What's the plan for this hobby meetup? Anything to bring?"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
@@ -325,7 +325,7 @@ export function CreateSessionForm({ onSuccess }: CreateSessionFormProps) {
           )}
 
           <Button type="submit" disabled={isSubmitting} className="w-full">
-            {isSubmitting ? "Creating..." : "Create group"}
+            {isSubmitting ? "Publishing..." : "Publish meetup"}
           </Button>
         </form>
       </CardContent>

@@ -13,26 +13,26 @@ import {
 import { JoinRequestCard } from "@/components/join-request-card";
 import { ArrowLeft, Users, CheckCircle2 } from "lucide-react";
 import {
-  groupTitle,
-  type StudySession,
-  type SessionParticipant,
+  hobbyTitle,
+  type Hobby,
+  type HobbyParticipant,
 } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 
-export default function ManageSessionPage({
+export default function ManageHobbyMeetupPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const resolvedParams = use(params);
-  const [session, setSession] = useState<StudySession | null>(null);
-  const [participants, setParticipants] = useState<SessionParticipant[]>([]);
+  const [session, setSession] = useState<Hobby | null>(null);
+  const [participants, setParticipants] = useState<HobbyParticipant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
 
-  const isSessionPast = (session: StudySession): boolean => {
+  const isSessionPast = (session: Hobby): boolean => {
     const sessionDate = new Date(session.date);
     const [hours, minutes] = session.endTime.split(":").map(Number);
     const endDateTime = new Date(sessionDate);
@@ -50,14 +50,14 @@ export default function ManageSessionPage({
     setIsLoading(true);
     try {
 
-      const sessionResponse = await fetch(`/api/groups/${resolvedParams.id}`);
-      if (!sessionResponse.ok) throw new Error("Failed to load session");
+      const sessionResponse = await fetch(`/api/hobbies/${resolvedParams.id}`);
+      if (!sessionResponse.ok) throw new Error("Failed to load hobby meetup");
       const sessionData = await sessionResponse.json();
       setSession(sessionData);
 
 
       const participantsResponse = await fetch(
-        `/api/groups/${resolvedParams.id}/participants`
+        `/api/hobbies/${resolvedParams.id}/participants`
       );
       if (!participantsResponse.ok)
         throw new Error("Failed to load participants");
@@ -67,7 +67,7 @@ export default function ManageSessionPage({
       console.error("[v0] Error loading session data:", error);
       toast({
         title: "Error",
-        description: "Failed to load session data",
+        description: "Failed to load hobby meetup",
         variant: "destructive",
       });
     } finally {
@@ -138,7 +138,7 @@ export default function ManageSessionPage({
   if (!session) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Session not found</p>
+        <p className="text-muted-foreground">Hobby meetup not found</p>
       </div>
     );
   }
@@ -166,7 +166,7 @@ export default function ManageSessionPage({
       <header className="border-b border-border/40 backdrop-blur-sm sticky top-0 z-50 bg-background/80 animate-in fade-in slide-in-from-top duration-500">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center gap-4 animate-in fade-in slide-in-from-left duration-700">
-            <Link href="/my-sessions">
+            <Link href="/my-hobbies">
               <Button
                 variant="ghost"
                 size="icon"
@@ -176,7 +176,7 @@ export default function ManageSessionPage({
               </Button>
             </Link>
             <h1 className="text-xl font-semibold text-primary">
-              Manage Session
+              Manage hobby meetup
             </h1>
           </div>
         </div>
@@ -187,7 +187,7 @@ export default function ManageSessionPage({
           <CardHeader>
             <div className="flex items-center gap-2">
               <CardTitle className="text-balance text-primary">
-                {groupTitle(session)}
+                {hobbyTitle(session)}
               </CardTitle>
               {isPast && (
                 <Badge className="bg-blue-500/20 text-blue-800 border-blue-500/30">
@@ -216,7 +216,7 @@ export default function ManageSessionPage({
             Pending Requests ({pendingRequests.length})
             {isPast && (
               <span className="text-sm font-normal text-muted-foreground ml-2">
-                (Session completed - no actions available)
+                (Meetup completed — no actions available)
               </span>
             )}
           </h2>

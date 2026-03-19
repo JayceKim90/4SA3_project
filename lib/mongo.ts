@@ -7,7 +7,7 @@ let database: Db | null = null;
 
 export const COLLECTIONS = {
   users: "users",
-  groups: "groups",
+  hobbies: "hobbies",
   participants: "participants",
 } as const;
 

@@ -26,36 +26,33 @@ export class SessionMediator implements ISessionMediator {
   }
 
   notifySessionCreated(sessionId: string): void {
-    const event = "session:created"
-    const data = { sessionId, timestamp: new Date() }
+    const data = { sessionId, hobbyId: sessionId, timestamp: new Date() }
 
-    this.logEvent(event, data)
-    this.broadcast(event, data)
+    this.logEvent("hobby:created", data)
+    this.broadcast("hobby:created", data)
+    this.broadcast("session:created", data)
 
-
-    this.broadcast("map:refresh", { reason: "new-session" })
-    this.broadcast("list:refresh", { reason: "new-session" })
+    this.broadcast("map:refresh", { reason: "new-hobby" })
+    this.broadcast("list:refresh", { reason: "new-hobby" })
   }
 
   notifySessionUpdated(sessionId: string): void {
-    const event = "session:updated"
-    const data = { sessionId, timestamp: new Date() }
+    const data = { sessionId, hobbyId: sessionId, timestamp: new Date() }
 
-    this.logEvent(event, data)
-    this.broadcast(event, data)
+    this.logEvent("hobby:updated", data)
+    this.broadcast("hobby:updated", data)
+    this.broadcast("session:updated", data)
 
-
-    this.broadcast("map:update-marker", { sessionId })
+    this.broadcast("map:update-marker", { sessionId, hobbyId: sessionId })
   }
 
   notifyParticipantStatusChanged(sessionId: string, participantId: string, status: string): void {
-    const event = "participant:status-changed"
-    const data = { sessionId, participantId, status, timestamp: new Date() }
+    const data = { sessionId, hobbyId: sessionId, participantId, status, timestamp: new Date() }
 
-    this.logEvent(event, data)
-    this.broadcast(event, data)
+    this.logEvent("participant:status-changed", data)
+    this.broadcast("participant:status-changed", data)
 
-
+    this.broadcast("hobby:capacity-changed", { sessionId, hobbyId: sessionId })
     this.broadcast("session:capacity-changed", { sessionId })
   }
 

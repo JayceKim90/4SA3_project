@@ -74,7 +74,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         </CardTitle>
         <CardDescription className="text-base">
           {mode === "login"
-            ? "Sign in to access your study sessions"
+            ? "Sign in to access your hobby meetups"
             : "Join HobbyHop and start meeting people who share your hobbies"}
         </CardDescription>
       </CardHeader>

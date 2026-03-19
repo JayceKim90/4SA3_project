@@ -1,6 +1,6 @@
 import { RankingStrategy } from "./ranking-strategy";
 import {
-  groupTitle,
+  hobbyTitle,
   type SessionSearchResult,
   type SessionFilters,
 } from "../types";
@@ -26,7 +26,7 @@ export class RelevanceRankingStrategy extends RankingStrategy {
 
 
     if (filters.subject) {
-      const titleLower = groupTitle(session).toLowerCase();
+      const titleLower = hobbyTitle(session).toLowerCase();
       const filterLower = filters.subject.toLowerCase();
 
       if (titleLower === filterLower) {

@@ -1,5 +1,5 @@
-import { getGroupRepository } from "@/lib/repository/group-repository";
-import type { GroupFilters, GroupSearchResult } from "@/lib/types";
+import { getHobbyRepository } from "@/lib/repository/group-repository";
+import type { HobbyFilters, HobbySearchResult } from "@/lib/types";
 import {
   RankingFactory,
   type RankingType,
@@ -9,21 +9,21 @@ import {
  * Mediator: 검색 요청 한 번으로 Repository + 랭킹 + 참가 상태를 묶어
  * Discover의 목록·지도가 같은 결과를 쓰도록 한다.
  */
-export async function executeGroupSearch(
-  filters: GroupFilters,
+export async function executeHobbySearch(
+  filters: HobbyFilters,
   rankingType: RankingType,
   userId?: string | null
-): Promise<GroupSearchResult[]> {
-  const repo = getGroupRepository();
+): Promise<HobbySearchResult[]> {
+  const repo = getHobbyRepository();
   let results = await repo.findByFilters(filters);
   const rankingStrategy = RankingFactory.createStrategy(rankingType);
   results = rankingStrategy.rank(results, filters);
 
   if (userId) {
-    results = results.map((group) => {
-      const participant = group.participants?.find((p) => p.userId === userId);
+    results = results.map((hobby) => {
+      const participant = hobby.participants?.find((p) => p.userId === userId);
       return {
-        ...group,
+        ...hobby,
         participationStatus: participant ? participant.status : null,
       };
     });
@@ -31,3 +31,6 @@ export async function executeGroupSearch(
 
   return results;
 }
+
+/** @deprecated Use executeHobbySearch */
+export const executeGroupSearch = executeHobbySearch;

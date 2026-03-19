@@ -2,24 +2,25 @@ import { randomUUID } from "crypto";
 import type { Document, Filter } from "mongodb";
 import { getMongoDb, COLLECTIONS, byId } from "@/lib/mongo";
 import type { BaseRepository } from "./base-repository";
-import type { GroupParticipant, User } from "@/lib/types";
+import type { HobbyParticipant, User } from "@/lib/types";
 
 export interface IParticipantRepository
-  extends BaseRepository<GroupParticipant> {
-  findByGroupId(groupId: string): Promise<GroupParticipant[]>;
-  /** @deprecated 레거시 세션 ID와 동일 — groupId 조회 */
-  findBySessionId(sessionId: string): Promise<GroupParticipant[]>;
-  findByUserId(userId: string): Promise<GroupParticipant[]>;
-  findPendingRequests(groupId: string): Promise<GroupParticipant[]>;
+  extends BaseRepository<HobbyParticipant> {
+  findByHobbyId(hobbyId: string): Promise<HobbyParticipant[]>;
+  /** @deprecated Use findByHobbyId */
+  findByGroupId(groupId: string): Promise<HobbyParticipant[]>;
+  findBySessionId(sessionId: string): Promise<HobbyParticipant[]>;
+  findByUserId(userId: string): Promise<HobbyParticipant[]>;
+  findPendingRequests(hobbyId: string): Promise<HobbyParticipant[]>;
   updateStatus(
     id: string,
     status: "approved" | "rejected"
-  ): Promise<GroupParticipant>;
+  ): Promise<HobbyParticipant>;
 }
 
 type PartDoc = {
   _id: string;
-  groupId: string;
+  hobbyId: string;
   userId: string;
   contactEmail?: string | null;
   contactPhone?: string | null;
@@ -43,10 +44,10 @@ export class MongoParticipantRepository implements IParticipantRepository {
     };
   }
 
-  private mapRow(row: PartDoc, user?: User | null): GroupParticipant {
-    const p: GroupParticipant = {
+  private mapRow(row: PartDoc, user?: User | null): HobbyParticipant {
+    const p: HobbyParticipant = {
       id: row._id,
-      groupId: row.groupId,
+      hobbyId: row.hobbyId,
       userId: row.userId,
       contactEmail: row.contactEmail || undefined,
       contactPhone: row.contactPhone || undefined,
@@ -65,7 +66,7 @@ export class MongoParticipantRepository implements IParticipantRepository {
     return p;
   }
 
-  async findById(id: string): Promise<GroupParticipant | null> {
+  async findById(id: string): Promise<HobbyParticipant | null> {
     const db = await getMongoDb();
     const row = (await db
       .collection(COLLECTIONS.participants)
@@ -75,14 +76,14 @@ export class MongoParticipantRepository implements IParticipantRepository {
     return this.mapRow(row, user);
   }
 
-  async findAll(): Promise<GroupParticipant[]> {
+  async findAll(): Promise<HobbyParticipant[]> {
     const db = await getMongoDb();
     const rows = (await db
       .collection(COLLECTIONS.participants)
       .find({} as unknown as Filter<Document>)
       .sort({ requestedAt: -1 })
       .toArray()) as unknown as PartDoc[];
-    const out: GroupParticipant[] = [];
+    const out: HobbyParticipant[] = [];
     for (const row of rows) {
       const user = await this.loadUser(row.userId);
       out.push(this.mapRow(row, user));
@@ -91,16 +92,16 @@ export class MongoParticipantRepository implements IParticipantRepository {
   }
 
   async create(
-    data: Omit<GroupParticipant, "id" | "requestedAt"> & {
+    data: Omit<HobbyParticipant, "id" | "requestedAt"> & {
       requestedAt?: Date;
     }
-  ): Promise<GroupParticipant> {
+  ): Promise<HobbyParticipant> {
     const db = await getMongoDb();
     const id = randomUUID();
     const requestedAt = data.requestedAt ?? new Date();
     await db.collection(COLLECTIONS.participants).insertOne({
       _id: id,
-      groupId: data.groupId,
+      hobbyId: data.hobbyId,
       userId: data.userId,
       contactEmail: data.contactEmail ?? null,
       contactPhone: data.contactPhone ?? null,
@@ -113,7 +114,7 @@ export class MongoParticipantRepository implements IParticipantRepository {
     return created;
   }
 
-  async update(id: string, data: Partial<GroupParticipant>): Promise<GroupParticipant> {
+  async update(id: string, data: Partial<HobbyParticipant>): Promise<HobbyParticipant> {
     const db = await getMongoDb();
     const $set: Record<string, unknown> = {};
     if (data.status !== undefined) $set.status = data.status;
@@ -138,14 +139,14 @@ export class MongoParticipantRepository implements IParticipantRepository {
       .deleteOne(byId(id));
   }
 
-  async findByGroupId(groupId: string): Promise<GroupParticipant[]> {
+  async findByHobbyId(hobbyId: string): Promise<HobbyParticipant[]> {
     const db = await getMongoDb();
     const rows = (await db
       .collection(COLLECTIONS.participants)
-      .find({ groupId } as unknown as Filter<Document>)
+      .find({ hobbyId } as unknown as Filter<Document>)
       .sort({ requestedAt: -1 })
       .toArray()) as unknown as PartDoc[];
-    const out: GroupParticipant[] = [];
+    const out: HobbyParticipant[] = [];
     for (const row of rows) {
       const user = await this.loadUser(row.userId);
       out.push(this.mapRow(row, user));
@@ -153,18 +154,22 @@ export class MongoParticipantRepository implements IParticipantRepository {
     return out;
   }
 
-  async findBySessionId(sessionId: string): Promise<GroupParticipant[]> {
-    return this.findByGroupId(sessionId);
+  async findByGroupId(groupId: string): Promise<HobbyParticipant[]> {
+    return this.findByHobbyId(groupId);
   }
 
-  async findByUserId(userId: string): Promise<GroupParticipant[]> {
+  async findBySessionId(sessionId: string): Promise<HobbyParticipant[]> {
+    return this.findByHobbyId(sessionId);
+  }
+
+  async findByUserId(userId: string): Promise<HobbyParticipant[]> {
     const db = await getMongoDb();
     const rows = (await db
       .collection(COLLECTIONS.participants)
       .find({ userId } as unknown as Filter<Document>)
       .sort({ requestedAt: -1 })
       .toArray()) as unknown as PartDoc[];
-    const out: GroupParticipant[] = [];
+    const out: HobbyParticipant[] = [];
     for (const row of rows) {
       const user = await this.loadUser(row.userId);
       out.push(this.mapRow(row, user));
@@ -172,14 +177,14 @@ export class MongoParticipantRepository implements IParticipantRepository {
     return out;
   }
 
-  async findPendingRequests(groupId: string): Promise<GroupParticipant[]> {
+  async findPendingRequests(hobbyId: string): Promise<HobbyParticipant[]> {
     const db = await getMongoDb();
     const rows = (await db
       .collection(COLLECTIONS.participants)
-      .find({ groupId, status: "pending" } as unknown as Filter<Document>)
+      .find({ hobbyId, status: "pending" } as unknown as Filter<Document>)
       .sort({ requestedAt: 1 })
       .toArray()) as unknown as PartDoc[];
-    const out: GroupParticipant[] = [];
+    const out: HobbyParticipant[] = [];
     for (const row of rows) {
       const user = await this.loadUser(row.userId);
       out.push(this.mapRow(row, user));
@@ -190,7 +195,7 @@ export class MongoParticipantRepository implements IParticipantRepository {
   async updateStatus(
     id: string,
     status: "approved" | "rejected"
-  ): Promise<GroupParticipant> {
+  ): Promise<HobbyParticipant> {
     const db = await getMongoDb();
     await db.collection(COLLECTIONS.participants).updateOne(
       byId(id),

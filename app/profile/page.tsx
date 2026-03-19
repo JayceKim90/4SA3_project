@@ -47,11 +47,11 @@ export default async function ProfilePage() {
               <Link href="/discover">
                 <Button variant="ghost">Discover</Button>
               </Link>
-              <Link href="/my-sessions">
-                <Button variant="ghost">My Sessions</Button>
+              <Link href="/my-hobbies">
+                <Button variant="ghost">My hobbies</Button>
               </Link>
               <Link href="/create">
-                <Button variant="ghost">Create Session</Button>
+                <Button variant="ghost">Host a hobby</Button>
               </Link>
               <LogoutButton />
             </nav>
@@ -73,7 +73,7 @@ export default async function ProfilePage() {
                 </Avatar>
                 <div className="flex-1">
                   <CardTitle className="text-2xl">{user.name}</CardTitle>
-                  <CardDescription>Student Profile</CardDescription>
+                  <CardDescription>HobbyHop profile</CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -111,12 +111,12 @@ export default async function ProfilePage() {
               <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Link href="/my-sessions" className="block">
+              <Link href="/my-hobbies" className="block">
                 <Button
                   variant="outline"
                   className="w-full justify-start bg-transparent"
                 >
-                  View My Sessions
+                  View my hobby meetups
                 </Button>
               </Link>
               <Link href="/create" className="block">
@@ -124,7 +124,7 @@ export default async function ProfilePage() {
                   variant="outline"
                   className="w-full justify-start bg-transparent"
                 >
-                  Create New Session
+                  Host a new hobby meetup
                 </Button>
               </Link>
               <Link href="/discover" className="block">
@@ -132,7 +132,7 @@ export default async function ProfilePage() {
                   variant="outline"
                   className="w-full justify-start bg-transparent"
                 >
-                  Discover Sessions
+                  Discover hobby meetups
                 </Button>
               </Link>
             </CardContent>

@@ -24,31 +24,31 @@ async function initMongo() {
 
     await db.collection(COLLECTIONS.users).createIndex({ email: 1 }, { unique: true });
     await db
-      .collection(COLLECTIONS.groups)
+      .collection(COLLECTIONS.hobbies)
       .createIndex({ hostId: 1 });
     await db
-      .collection(COLLECTIONS.groups)
+      .collection(COLLECTIONS.hobbies)
       .createIndex({ date: 1 });
     await db
-      .collection(COLLECTIONS.groups)
+      .collection(COLLECTIONS.hobbies)
       .createIndex({ category: 1 });
     await db
-      .collection(COLLECTIONS.groups)
+      .collection(COLLECTIONS.hobbies)
       .createIndex({ location: "2dsphere" });
     await db
-      .collection(COLLECTIONS.groups)
+      .collection(COLLECTIONS.hobbies)
       .createIndex({ title: "text" });
 
     await db
       .collection(COLLECTIONS.participants)
-      .createIndex({ groupId: 1 });
+      .createIndex({ hobbyId: 1 });
     await db
       .collection(COLLECTIONS.participants)
       .createIndex({ userId: 1 });
     await db
       .collection(COLLECTIONS.participants)
       .createIndex(
-        { groupId: 1, userId: 1 },
+        { hobbyId: 1, userId: 1 },
         { unique: true }
       );
 

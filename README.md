@@ -30,20 +30,20 @@ Web app to discover and host **local hobby meetups**: search by title, category,
 | 컬렉션        | 내용 |
 |---------------|------|
 | `users`       | 이메일, 이름, 비밀번호 해시 |
-| `groups`      | 호스트, 제목, 카테고리, 태그, 일정, 정원, 주소·좌표, GeoJSON `location` |
-| `participants`| 그룹·사용자, **contactEmail/contactPhone**, 상태(pending/approved/rejected) |
+| `hobbies`     | 호스트, 제목, 카테고리, 태그, 일정, 정원, 주소·좌표, GeoJSON `location` |
+| `participants`| `hobbyId`·사용자, **contactEmail/contactPhone**, 상태(pending/approved/rejected) |
 
 자격 증명은 저장소에 **커밋하지 마세요**. `.env.example`만 참고하세요.
 
 ## Milestone #3 — MVC·프로세스
 
-- **Model:** Mongo + Repository + `lib/types.ts` (`Group`, `GroupParticipant`).  
+- **Model:** Mongo + Repository + `lib/types.ts` (`Hobby`, `HobbyParticipant`).  
 - **View:** `app/*`, `components/*`.  
-- **Controller:** `app/api/groups/*`, `app/api/participants/*`, `app/api/auth/*`.
+- **Controller:** `app/api/hobbies/*`, `app/api/participants/*`, `app/api/auth/*`.
 
-**검색 흐름:** Discover → `POST /api/groups/search` → `executeGroupSearch` → `GroupRepository.findByFilters` → 목록·지도 동일 JSON.
+**검색 흐름:** Discover → `POST /api/hobbies/search` → `executeHobbySearch` → `MongoHobbyRepository.findByFilters` → 목록·지도 동일 JSON. MongoDB 컬렉션: `hobbies`, 참가자 문서 필드: `hobbyId`.
 
-**참가:** `POST /api/participants` with `groupId`, `userId`, `contactEmail`, `contactPhone` → 호스트가 `PATCH /api/participants/:id` 로 승인/거부.
+**참가:** `POST /api/participants` with `hobbyId` (레거시: `groupId`/`sessionId`), `userId`, `contactEmail`, `contactPhone` → 호스트가 `PATCH /api/participants/:id` 로 승인/거부.
 
 ## UI 테마
 
@@ -51,11 +51,12 @@ Web app to discover and host **local hobby meetups**: search by title, category,
 
 ## Getting started
 
-1. Node 18+, [pnpm](https://pnpm.io).  
+1. Node 18+.  
 2. `cp .env.example .env.local` 후 `MONGODB_URI` 설정.  
-3. `pnpm install`  
-4. `pnpm db:init` — MongoDB 인덱스 생성  
-5. `pnpm dev` → [http://localhost:3000](http://localhost:3000)
+3. `npm install`  
+4. `npm run db:init` — MongoDB 인덱스 생성  
+5. `npm run db:verify` — (선택) Atlas 연결·컬렉션·핵심 인덱스 검증  
+6. `npm run dev` → [http://localhost:3000](http://localhost:3000)
 
 ## API docs
 
@@ -63,7 +64,8 @@ Web app to discover and host **local hobby meetups**: search by title, category,
 
 ## Scripts
 
-- `pnpm db:init` — `scripts/init-db.ts` (Mongo 인덱스)
+- `npm run db:init` — `scripts/init-db.ts` (Mongo 인덱스)  
+- `npm run db:verify` — `scripts/verify-mongo-setup.ts` (연결·스키마 스모크)
 
 ---
 
