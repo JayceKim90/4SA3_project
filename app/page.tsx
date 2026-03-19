@@ -282,11 +282,10 @@ export default async function HomePage() {
             <div className="text-center md:text-right">
               <p className="text-sm font-medium">
                 Created by{" "}
-                <span className="text-primary font-bold">Kyoungjae Shin</span>
+                <span className="text-primary font-bold">Sungsu Kim</span>
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                Copyright © 2025 Kyoungjae Shin (400428169). All Rights
-                Reserved.
+                Copyright © 2025 Sungsu Kim. All rights reserved.
               </p>
             </div>
           </div>

@@ -651,7 +651,7 @@ export const swaggerConfig = {
                   properties: {
                     status: {
                       type: "string",
-                      enum: ["pending", "accepted", "rejected"],
+                      enum: ["pending", "approved", "rejected"],
                     },
                   },
                 },
@@ -668,17 +668,17 @@ export const swaggerConfig = {
           },
         },
       },
-      "/api/sessions/{id}/participants": {
+      "/api/groups/{id}/participants": {
         get: {
-          tags: ["Sessions"],
-          summary: "Get session participants",
-          description: "Get all participants for a specific session",
+          tags: ["Groups"],
+          summary: "Get group participants",
+          description: "All join rows for a group",
           parameters: [
             {
               name: "id",
               in: "path",
               required: true,
-              description: "Session ID",
+              description: "Group ID",
               schema: { type: "string" },
             },
           ],

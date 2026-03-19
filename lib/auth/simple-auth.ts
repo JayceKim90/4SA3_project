@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import { randomUUID } from "crypto";
-import { getMongoDb, COLLECTIONS } from "@/lib/mongo";
+import type { Document, Filter } from "mongodb";
+import { getMongoDb, COLLECTIONS, byId } from "@/lib/mongo";
 import type { User } from "@/lib/types";
 
 export async function signIn(email: string, password: string): Promise<User> {
@@ -9,7 +10,9 @@ export async function signIn(email: string, password: string): Promise<User> {
   }
 
   const db = await getMongoDb();
-  const user = await db.collection(COLLECTIONS.users).findOne({ email });
+  const user = await db
+    .collection(COLLECTIONS.users)
+    .findOne({ email } as unknown as Filter<Document>);
 
   if (!user) {
     throw new Error("Account not found. Please sign up first.");
@@ -24,7 +27,7 @@ export async function signIn(email: string, password: string): Promise<User> {
   }
 
   return {
-    id: user._id as string,
+    id: String(user._id),
     email: user.email as string,
     name: user.name as string,
     createdAt: new Date(user.createdAt as Date),
@@ -41,7 +44,9 @@ export async function signUp(
   }
 
   const db = await getMongoDb();
-  const existing = await db.collection(COLLECTIONS.users).findOne({ email });
+  const existing = await db
+    .collection(COLLECTIONS.users)
+    .findOne({ email } as unknown as Filter<Document>);
 
   if (existing) {
     throw new Error("Account already exists. Please sign in instead.");
@@ -57,21 +62,23 @@ export async function signUp(
     name,
     passwordHash,
     createdAt: now,
-  });
+  } as Document);
 
   return { id, email, name, createdAt: now };
 }
 
 export async function getCurrentUser(userId: string): Promise<User | null> {
   const db = await getMongoDb();
-  const user = await db.collection(COLLECTIONS.users).findOne({ _id: userId });
+  const user = await db
+    .collection(COLLECTIONS.users)
+    .findOne(byId(userId));
 
   if (!user) {
     return null;
   }
 
   return {
-    id: user._id as string,
+    id: String(user._id),
     email: user.email as string,
     name: user.name as string,
     createdAt: new Date(user.createdAt as Date),

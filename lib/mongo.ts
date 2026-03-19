@@ -1,4 +1,4 @@
-import { MongoClient, Db } from "mongodb";
+import { MongoClient, Db, type Document, type Filter } from "mongodb";
 
 const uri = process.env.MONGODB_URI;
 
@@ -10,6 +10,11 @@ export const COLLECTIONS = {
   groups: "groups",
   participants: "participants",
 } as const;
+
+/** UUID 문자열 `_id` 조회용 (드라이버 기본 타입은 ObjectId) */
+export function byId(id: string): Filter<Document> {
+  return { _id: id } as unknown as Filter<Document>;
+}
 
 export async function getMongoDb(): Promise<Db> {
   if (database) return database;

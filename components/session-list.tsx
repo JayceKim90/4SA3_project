@@ -21,9 +21,9 @@ export function SessionList({
   if (sessions.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-muted-foreground">No study sessions found</p>
+        <p className="text-muted-foreground">No groups found</p>
         <p className="text-sm text-muted-foreground mt-2">
-          Try adjusting your filters or create a new session
+          Try adjusting your filters or create a new meetup
         </p>
       </div>
     );

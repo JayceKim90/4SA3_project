@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto";
-import { getMongoDb, COLLECTIONS } from "@/lib/mongo";
+import type { Document, Filter } from "mongodb";
+import { getMongoDb, COLLECTIONS, byId } from "@/lib/mongo";
 import type { BaseRepository } from "./base-repository";
 import type { GroupParticipant, User } from "@/lib/types";
 
@@ -30,10 +31,12 @@ type PartDoc = {
 export class MongoParticipantRepository implements IParticipantRepository {
   private async loadUser(userId: string): Promise<User | null> {
     const db = await getMongoDb();
-    const u = await db.collection(COLLECTIONS.users).findOne({ _id: userId });
+    const u = await db
+      .collection(COLLECTIONS.users)
+      .findOne(byId(userId));
     if (!u) return null;
     return {
-      id: u._id as string,
+      id: String(u._id),
       email: u.email as string,
       name: u.name as string,
       createdAt: new Date(u.createdAt as Date),
@@ -64,9 +67,9 @@ export class MongoParticipantRepository implements IParticipantRepository {
 
   async findById(id: string): Promise<GroupParticipant | null> {
     const db = await getMongoDb();
-    const row = await db.collection<PartDoc>(COLLECTIONS.participants).findOne({
-      _id: id,
-    });
+    const row = (await db
+      .collection(COLLECTIONS.participants)
+      .findOne(byId(id))) as PartDoc | null;
     if (!row) return null;
     const user = await this.loadUser(row.userId);
     return this.mapRow(row, user);
@@ -74,11 +77,11 @@ export class MongoParticipantRepository implements IParticipantRepository {
 
   async findAll(): Promise<GroupParticipant[]> {
     const db = await getMongoDb();
-    const rows = await db
-      .collection<PartDoc>(COLLECTIONS.participants)
-      .find({})
+    const rows = (await db
+      .collection(COLLECTIONS.participants)
+      .find({} as unknown as Filter<Document>)
       .sort({ requestedAt: -1 })
-      .toArray();
+      .toArray()) as unknown as PartDoc[];
     const out: GroupParticipant[] = [];
     for (const row of rows) {
       const user = await this.loadUser(row.userId);
@@ -104,7 +107,7 @@ export class MongoParticipantRepository implements IParticipantRepository {
       status: data.status || "pending",
       requestedAt,
       respondedAt: null,
-    });
+    } as Document);
     const created = await this.findById(id);
     if (!created) throw new Error("Failed to create participant");
     return created;
@@ -120,7 +123,9 @@ export class MongoParticipantRepository implements IParticipantRepository {
 
     if (Object.keys($set).length === 0) throw new Error("No fields to update");
 
-    await db.collection(COLLECTIONS.participants).updateOne({ _id: id }, { $set });
+    await db
+      .collection(COLLECTIONS.participants)
+      .updateOne(byId(id), { $set });
     const updated = await this.findById(id);
     if (!updated) throw new Error("Participant not found");
     return updated;
@@ -128,16 +133,18 @@ export class MongoParticipantRepository implements IParticipantRepository {
 
   async delete(id: string): Promise<void> {
     const db = await getMongoDb();
-    await db.collection(COLLECTIONS.participants).deleteOne({ _id: id });
+    await db
+      .collection(COLLECTIONS.participants)
+      .deleteOne(byId(id));
   }
 
   async findByGroupId(groupId: string): Promise<GroupParticipant[]> {
     const db = await getMongoDb();
-    const rows = await db
-      .collection<PartDoc>(COLLECTIONS.participants)
-      .find({ groupId })
+    const rows = (await db
+      .collection(COLLECTIONS.participants)
+      .find({ groupId } as unknown as Filter<Document>)
       .sort({ requestedAt: -1 })
-      .toArray();
+      .toArray()) as unknown as PartDoc[];
     const out: GroupParticipant[] = [];
     for (const row of rows) {
       const user = await this.loadUser(row.userId);
@@ -152,11 +159,11 @@ export class MongoParticipantRepository implements IParticipantRepository {
 
   async findByUserId(userId: string): Promise<GroupParticipant[]> {
     const db = await getMongoDb();
-    const rows = await db
-      .collection<PartDoc>(COLLECTIONS.participants)
-      .find({ userId })
+    const rows = (await db
+      .collection(COLLECTIONS.participants)
+      .find({ userId } as unknown as Filter<Document>)
       .sort({ requestedAt: -1 })
-      .toArray();
+      .toArray()) as unknown as PartDoc[];
     const out: GroupParticipant[] = [];
     for (const row of rows) {
       const user = await this.loadUser(row.userId);
@@ -167,11 +174,11 @@ export class MongoParticipantRepository implements IParticipantRepository {
 
   async findPendingRequests(groupId: string): Promise<GroupParticipant[]> {
     const db = await getMongoDb();
-    const rows = await db
-      .collection<PartDoc>(COLLECTIONS.participants)
-      .find({ groupId, status: "pending" })
+    const rows = (await db
+      .collection(COLLECTIONS.participants)
+      .find({ groupId, status: "pending" } as unknown as Filter<Document>)
       .sort({ requestedAt: 1 })
-      .toArray();
+      .toArray()) as unknown as PartDoc[];
     const out: GroupParticipant[] = [];
     for (const row of rows) {
       const user = await this.loadUser(row.userId);
@@ -186,7 +193,7 @@ export class MongoParticipantRepository implements IParticipantRepository {
   ): Promise<GroupParticipant> {
     const db = await getMongoDb();
     await db.collection(COLLECTIONS.participants).updateOne(
-      { _id: id },
+      byId(id),
       { $set: { status, respondedAt: new Date() } }
     );
     const updated = await this.findById(id);

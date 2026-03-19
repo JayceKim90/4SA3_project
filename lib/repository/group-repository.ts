@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto";
-import { getMongoDb, COLLECTIONS } from "@/lib/mongo";
+import type { Document, Filter } from "mongodb";
+import { getMongoDb, COLLECTIONS, byId } from "@/lib/mongo";
 import type {
   Group,
   GroupFilters,
@@ -93,10 +94,12 @@ export class MongoGroupRepository implements IGroupRepository {
 
   private async loadHost(hostId: string): Promise<User | null> {
     const db = await getMongoDb();
-    const u = await db.collection(COLLECTIONS.users).findOne({ _id: hostId });
+    const u = await db
+      .collection(COLLECTIONS.users)
+      .findOne(byId(hostId));
     if (!u) return null;
     return {
-      id: u._id as string,
+      id: String(u._id),
       email: u.email as string,
       name: u.name as string,
       createdAt: new Date(u.createdAt as Date),
@@ -105,9 +108,9 @@ export class MongoGroupRepository implements IGroupRepository {
 
   async findById(id: string): Promise<Group | null> {
     const db = await getMongoDb();
-    const row = await db.collection<GroupDoc>(COLLECTIONS.groups).findOne({
-      _id: id,
-    });
+    const row = (await db
+      .collection(COLLECTIONS.groups)
+      .findOne(byId(id))) as GroupDoc | null;
     if (!row) return null;
     const host = await this.loadHost(row.hostId);
     return this.mapDoc(row, host);
@@ -115,11 +118,11 @@ export class MongoGroupRepository implements IGroupRepository {
 
   async findAll(): Promise<Group[]> {
     const db = await getMongoDb();
-    const rows = await db
-      .collection<GroupDoc>(COLLECTIONS.groups)
-      .find({})
+    const rows = (await db
+      .collection(COLLECTIONS.groups)
+      .find({} as unknown as Filter<Document>)
       .sort({ date: 1, startTime: 1 })
-      .toArray();
+      .toArray()) as unknown as GroupDoc[];
     const out: Group[] = [];
     for (const row of rows) {
       const host = await this.loadHost(row.hostId);
@@ -155,7 +158,7 @@ export class MongoGroupRepository implements IGroupRepository {
       updatedAt: now,
       location: { type: "Point", coordinates: [lng, lat] },
     };
-    await db.collection(COLLECTIONS.groups).insertOne(doc);
+    await db.collection(COLLECTIONS.groups).insertOne(doc as Document);
     const created = await this.findById(id);
     if (!created) throw new Error("Failed to create group");
     return created;
@@ -186,9 +189,11 @@ export class MongoGroupRepository implements IGroupRepository {
 
     const upd = await db
       .collection(COLLECTIONS.groups)
-      .updateOne({ _id: id }, { $set });
+      .updateOne(byId(id), { $set });
     if (upd.matchedCount === 0) throw new Error("Group not found");
-    const row = await db.collection<GroupDoc>(COLLECTIONS.groups).findOne({ _id: id });
+    const row = (await db
+      .collection(COLLECTIONS.groups)
+      .findOne(byId(id))) as GroupDoc | null;
     if (!row) throw new Error("Group not found");
     const host = await this.loadHost(row.hostId);
     return this.mapDoc(row, host);
@@ -196,12 +201,14 @@ export class MongoGroupRepository implements IGroupRepository {
 
   async delete(id: string): Promise<void> {
     const db = await getMongoDb();
-    await db.collection(COLLECTIONS.groups).deleteOne({ _id: id });
+    await db
+      .collection(COLLECTIONS.groups)
+      .deleteOne(byId(id));
   }
 
   async findByFilters(filters: GroupFilters): Promise<GroupSearchResult[]> {
     const db = await getMongoDb();
-    const coll = db.collection<GroupDoc>(COLLECTIONS.groups);
+    const coll = db.collection(COLLECTIONS.groups);
 
     const match: Record<string, unknown> = {
       date: { $gte: startOfTodayUtc() },
@@ -255,13 +262,13 @@ export class MongoGroupRepository implements IGroupRepository {
         },
       ];
       rows = (await coll
-        .aggregate<GroupDoc & { geoDistanceM?: number }>(pipeline)
-        .toArray()) as GroupDoc[];
+        .aggregate(pipeline)
+        .toArray()) as unknown as GroupDoc[];
     } else {
-      rows = await coll
-        .find(match)
+      rows = (await coll
+        .find(match as unknown as Filter<Document>)
         .sort({ date: 1, startTime: 1 })
-        .toArray();
+        .toArray()) as unknown as GroupDoc[];
     }
 
     const sessionIds = rows.map((r) => r._id);
@@ -271,22 +278,23 @@ export class MongoGroupRepository implements IGroupRepository {
     if (sessionIds.length > 0) {
       const participantRows = await db
         .collection(COLLECTIONS.participants)
-        .find({ groupId: { $in: sessionIds } })
+        .find({ groupId: { $in: sessionIds } } as unknown as Filter<Document>)
         .toArray();
 
       for (const p of participantRows) {
-        const gid = p.groupId as string;
+        const doc = p as Document;
+        const gid = String(doc.groupId);
         if (!participantsByGroup[gid]) participantsByGroup[gid] = [];
         participantsByGroup[gid].push({
-          id: p._id as string,
+          id: String(doc._id),
           groupId: gid,
-          userId: p.userId as string,
-          contactEmail: p.contactEmail as string | undefined,
-          contactPhone: p.contactPhone as string | undefined,
-          status: p.status as "pending" | "approved" | "rejected",
-          requestedAt: new Date(p.requestedAt as Date),
-          respondedAt: p.respondedAt
-            ? new Date(p.respondedAt as Date)
+          userId: String(doc.userId),
+          contactEmail: doc.contactEmail as string | undefined,
+          contactPhone: doc.contactPhone as string | undefined,
+          status: doc.status as "pending" | "approved" | "rejected",
+          requestedAt: new Date(doc.requestedAt as Date),
+          respondedAt: doc.respondedAt
+            ? new Date(doc.respondedAt as Date)
             : undefined,
         });
       }
@@ -330,11 +338,11 @@ export class MongoGroupRepository implements IGroupRepository {
 
   async findByHostId(hostId: string): Promise<Group[]> {
     const db = await getMongoDb();
-    const rows = await db
-      .collection<GroupDoc>(COLLECTIONS.groups)
-      .find({ hostId })
+    const rows = (await db
+      .collection(COLLECTIONS.groups)
+      .find({ hostId } as unknown as Filter<Document>)
       .sort({ date: -1, startTime: -1 })
-      .toArray();
+      .toArray()) as unknown as GroupDoc[];
     const out: Group[] = [];
     for (const row of rows) {
       const host = await this.loadHost(row.hostId);
@@ -345,11 +353,11 @@ export class MongoGroupRepository implements IGroupRepository {
 
   async findUpcoming(): Promise<Group[]> {
     const db = await getMongoDb();
-    const rows = await db
-      .collection<GroupDoc>(COLLECTIONS.groups)
-      .find({ date: { $gte: startOfTodayUtc() } })
+    const rows = (await db
+      .collection(COLLECTIONS.groups)
+      .find({ date: { $gte: startOfTodayUtc() } } as unknown as Filter<Document>)
       .sort({ date: 1, startTime: 1 })
-      .toArray();
+      .toArray()) as unknown as GroupDoc[];
     const out: Group[] = [];
     for (const row of rows) {
       const host = await this.loadHost(row.hostId);
