@@ -1,0 +1,12 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Book -->
+  <path d="M18 14C18 12.8954 18.8954 12 20 12H44C45.1046 12 46 12.8954 46 14V50C46 51.1046 45.1046 52 44 52H20C18.8954 52 18 51.1046 18 50V14Z" fill="#2563eb" stroke="#2563eb" stroke-width="2"/>
+  <path d="M18 20H46" stroke="white" stroke-width="1.5"/>
+  <path d="M18 26H46" stroke="white" stroke-width="1.5"/>
+  <path d="M18 32H46" stroke="white" stroke-width="1.5"/>
+  
+  <!-- Location Pin -->
+  <circle cx="44" cy="20" r="10" fill="#2563eb"/>
+  <path d="M44 12C39.5817 12 36 15.5817 36 20C36 23.5 44 32 44 32C44 32 52 23.5 52 20C52 15.5817 48.4183 12 44 12Z" fill="#1d4ed8" stroke="white" stroke-width="2"/>
+  <circle cx="44" cy="20" r="3" fill="white"/>
+</svg>

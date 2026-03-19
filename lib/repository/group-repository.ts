@@ -1,0 +1,369 @@
+import { randomUUID } from "crypto";
+import { getMongoDb, COLLECTIONS } from "@/lib/mongo";
+import type {
+  Group,
+  GroupFilters,
+  GroupSearchResult,
+  User,
+} from "@/lib/types";
+import type { BaseRepository } from "./base-repository";
+
+export interface IGroupRepository extends BaseRepository<Group> {
+  findByFilters(filters: GroupFilters): Promise<GroupSearchResult[]>;
+  findByHostId(hostId: string): Promise<Group[]>;
+  findUpcoming(): Promise<Group[]>;
+}
+
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function haversineKm(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+function startOfTodayUtc(): Date {
+  const d = new Date();
+  d.setUTCHours(0, 0, 0, 0);
+  return d;
+}
+
+type GroupDoc = {
+  _id: string;
+  hostId: string;
+  title: string;
+  category: string;
+  tags: string[];
+  date: Date;
+  startTime: string;
+  endTime: string;
+  capacity: number;
+  address: string;
+  latitude: number;
+  longitude: number;
+  placeId?: string | null;
+  description?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  location: { type: "Point"; coordinates: [number, number] };
+};
+
+export class MongoGroupRepository implements IGroupRepository {
+  private mapDoc(row: GroupDoc, host?: User | null): Group {
+    const g: Group = {
+      id: row._id,
+      hostId: row.hostId,
+      title: row.title,
+      category: row.category || "general",
+      tags: row.tags || [],
+      date: row.date instanceof Date ? row.date : new Date(row.date),
+      startTime: row.startTime,
+      endTime: row.endTime,
+      capacity: row.capacity,
+      location: {
+        address: row.address,
+        latitude: row.latitude,
+        longitude: row.longitude,
+        placeId: row.placeId || undefined,
+      },
+      description: row.description || undefined,
+      createdAt:
+        row.createdAt instanceof Date ? row.createdAt : new Date(row.createdAt),
+      updatedAt:
+        row.updatedAt instanceof Date ? row.updatedAt : new Date(row.updatedAt),
+    };
+    if (host) g.host = host;
+    return g;
+  }
+
+  private async loadHost(hostId: string): Promise<User | null> {
+    const db = await getMongoDb();
+    const u = await db.collection(COLLECTIONS.users).findOne({ _id: hostId });
+    if (!u) return null;
+    return {
+      id: u._id as string,
+      email: u.email as string,
+      name: u.name as string,
+      createdAt: new Date(u.createdAt as Date),
+    };
+  }
+
+  async findById(id: string): Promise<Group | null> {
+    const db = await getMongoDb();
+    const row = await db.collection<GroupDoc>(COLLECTIONS.groups).findOne({
+      _id: id,
+    });
+    if (!row) return null;
+    const host = await this.loadHost(row.hostId);
+    return this.mapDoc(row, host);
+  }
+
+  async findAll(): Promise<Group[]> {
+    const db = await getMongoDb();
+    const rows = await db
+      .collection<GroupDoc>(COLLECTIONS.groups)
+      .find({})
+      .sort({ date: 1, startTime: 1 })
+      .toArray();
+    const out: Group[] = [];
+    for (const row of rows) {
+      const host = await this.loadHost(row.hostId);
+      out.push(this.mapDoc(row, host));
+    }
+    return out;
+  }
+
+  async create(
+    data: Omit<Group, "id" | "createdAt" | "updatedAt">
+  ): Promise<Group> {
+    const db = await getMongoDb();
+    const id = randomUUID();
+    const now = new Date();
+    const lat = data.location.latitude;
+    const lng = data.location.longitude;
+    const doc: GroupDoc = {
+      _id: id,
+      hostId: data.hostId,
+      title: data.title,
+      category: data.category,
+      tags: data.tags,
+      date: data.date,
+      startTime: data.startTime,
+      endTime: data.endTime,
+      capacity: data.capacity,
+      address: data.location.address,
+      latitude: lat,
+      longitude: lng,
+      placeId: data.location.placeId ?? null,
+      description: data.description ?? null,
+      createdAt: now,
+      updatedAt: now,
+      location: { type: "Point", coordinates: [lng, lat] },
+    };
+    await db.collection(COLLECTIONS.groups).insertOne(doc);
+    const created = await this.findById(id);
+    if (!created) throw new Error("Failed to create group");
+    return created;
+  }
+
+  async update(id: string, data: Partial<Group>): Promise<Group> {
+    const db = await getMongoDb();
+    const $set: Record<string, unknown> = { updatedAt: new Date() };
+
+    if (data.title !== undefined) $set.title = data.title;
+    if (data.category !== undefined) $set.category = data.category;
+    if (data.tags !== undefined) $set.tags = data.tags;
+    if (data.date !== undefined) $set.date = data.date;
+    if (data.startTime !== undefined) $set.startTime = data.startTime;
+    if (data.endTime !== undefined) $set.endTime = data.endTime;
+    if (data.capacity !== undefined) $set.capacity = data.capacity;
+    if (data.description !== undefined) $set.description = data.description;
+    if (data.location !== undefined) {
+      $set.address = data.location.address;
+      $set.latitude = data.location.latitude;
+      $set.longitude = data.location.longitude;
+      $set.placeId = data.location.placeId ?? null;
+      $set.location = {
+        type: "Point",
+        coordinates: [data.location.longitude, data.location.latitude],
+      };
+    }
+
+    const upd = await db
+      .collection(COLLECTIONS.groups)
+      .updateOne({ _id: id }, { $set });
+    if (upd.matchedCount === 0) throw new Error("Group not found");
+    const row = await db.collection<GroupDoc>(COLLECTIONS.groups).findOne({ _id: id });
+    if (!row) throw new Error("Group not found");
+    const host = await this.loadHost(row.hostId);
+    return this.mapDoc(row, host);
+  }
+
+  async delete(id: string): Promise<void> {
+    const db = await getMongoDb();
+    await db.collection(COLLECTIONS.groups).deleteOne({ _id: id });
+  }
+
+  async findByFilters(filters: GroupFilters): Promise<GroupSearchResult[]> {
+    const db = await getMongoDb();
+    const coll = db.collection<GroupDoc>(COLLECTIONS.groups);
+
+    const match: Record<string, unknown> = {
+      date: { $gte: startOfTodayUtc() },
+    };
+
+    if (filters.subject) {
+      match.title = {
+        $regex: escapeRegex(filters.subject),
+        $options: "i",
+      };
+    }
+
+    if (filters.category) {
+      match.category = filters.category;
+    }
+
+    if (filters.tags && filters.tags.length > 0) {
+      match.tags = { $in: filters.tags };
+    }
+
+    if (filters.date) {
+      const d = new Date(filters.date);
+      const start = new Date(d);
+      start.setUTCHours(0, 0, 0, 0);
+      const end = new Date(d);
+      end.setUTCHours(23, 59, 59, 999);
+      match.date = { $gte: start, $lte: end };
+    }
+
+    const useGeoNear =
+      filters.userLocation &&
+      filters.maxDistance != null &&
+      filters.maxDistance > 0;
+
+    let rows: GroupDoc[];
+
+    if (useGeoNear) {
+      const { latitude, longitude } = filters.userLocation!;
+      const pipeline = [
+        {
+          $geoNear: {
+            near: {
+              type: "Point",
+              coordinates: [longitude, latitude],
+            },
+            distanceField: "geoDistanceM",
+            maxDistance: filters.maxDistance! * 1000,
+            spherical: true,
+            query: match,
+          },
+        },
+      ];
+      rows = (await coll
+        .aggregate<GroupDoc & { geoDistanceM?: number }>(pipeline)
+        .toArray()) as GroupDoc[];
+    } else {
+      rows = await coll
+        .find(match)
+        .sort({ date: 1, startTime: 1 })
+        .toArray();
+    }
+
+    const sessionIds = rows.map((r) => r._id);
+    const participantsByGroup: Record<string, import("@/lib/types").GroupParticipant[]> =
+      {};
+
+    if (sessionIds.length > 0) {
+      const participantRows = await db
+        .collection(COLLECTIONS.participants)
+        .find({ groupId: { $in: sessionIds } })
+        .toArray();
+
+      for (const p of participantRows) {
+        const gid = p.groupId as string;
+        if (!participantsByGroup[gid]) participantsByGroup[gid] = [];
+        participantsByGroup[gid].push({
+          id: p._id as string,
+          groupId: gid,
+          userId: p.userId as string,
+          contactEmail: p.contactEmail as string | undefined,
+          contactPhone: p.contactPhone as string | undefined,
+          status: p.status as "pending" | "approved" | "rejected",
+          requestedAt: new Date(p.requestedAt as Date),
+          respondedAt: p.respondedAt
+            ? new Date(p.respondedAt as Date)
+            : undefined,
+        });
+      }
+    }
+
+    let results: GroupSearchResult[] = [];
+
+    for (const row of rows) {
+      const host = await this.loadHost(row.hostId);
+      const session = this.mapDoc(row, host);
+      const parts = participantsByGroup[row._id] || [];
+      session.participants = parts;
+
+      let distance: number | undefined;
+      if (filters.userLocation) {
+        distance = haversineKm(
+          filters.userLocation.latitude,
+          filters.userLocation.longitude,
+          row.latitude,
+          row.longitude
+        );
+      }
+      const rowWithGeo = row as GroupDoc & { geoDistanceM?: number };
+      if (rowWithGeo.geoDistanceM != null) {
+        distance = rowWithGeo.geoDistanceM / 1000;
+      }
+
+      const r: GroupSearchResult = { ...session, distance };
+      results.push(r);
+    }
+
+    if (filters.maxDistance && filters.userLocation && !useGeoNear) {
+      results = results.filter(
+        (s) =>
+          s.distance !== undefined && s.distance <= filters.maxDistance!
+      );
+    }
+
+    return results;
+  }
+
+  async findByHostId(hostId: string): Promise<Group[]> {
+    const db = await getMongoDb();
+    const rows = await db
+      .collection<GroupDoc>(COLLECTIONS.groups)
+      .find({ hostId })
+      .sort({ date: -1, startTime: -1 })
+      .toArray();
+    const out: Group[] = [];
+    for (const row of rows) {
+      const host = await this.loadHost(row.hostId);
+      out.push(this.mapDoc(row, host));
+    }
+    return out;
+  }
+
+  async findUpcoming(): Promise<Group[]> {
+    const db = await getMongoDb();
+    const rows = await db
+      .collection<GroupDoc>(COLLECTIONS.groups)
+      .find({ date: { $gte: startOfTodayUtc() } })
+      .sort({ date: 1, startTime: 1 })
+      .toArray();
+    const out: Group[] = [];
+    for (const row of rows) {
+      const host = await this.loadHost(row.hostId);
+      out.push(this.mapDoc(row, host));
+    }
+    return out;
+  }
+}
+
+let groupRepository: IGroupRepository | null = null;
+
+export function getGroupRepository(): IGroupRepository {
+  if (!groupRepository) {
+    groupRepository = new MongoGroupRepository();
+  }
+  return groupRepository;
+}
