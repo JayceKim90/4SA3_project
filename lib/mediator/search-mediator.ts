@@ -20,8 +20,11 @@ export async function executeHobbySearch(
   results = rankingStrategy.rank(results, filters);
 
   if (userId) {
+    const uid = String(userId);
     results = results.map((hobby) => {
-      const participant = hobby.participants?.find((p) => p.userId === userId);
+      const participant = hobby.participants?.find(
+        (p) => String(p.userId) === uid
+      );
       return {
         ...hobby,
         participationStatus: participant ? participant.status : null,

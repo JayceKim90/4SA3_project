@@ -35,7 +35,9 @@ export async function POST(request: NextRequest) {
     const participantRepo = getParticipantRepository();
 
     const existing = await participantRepo.findByHobbyId(hobbyId);
-    const alreadyRequested = existing.some((p) => p.userId === userId);
+    const alreadyRequested = existing.some(
+      (p) => String(p.userId) === String(userId)
+    );
 
     if (alreadyRequested) {
       return NextResponse.json(
@@ -84,7 +86,9 @@ export async function DELETE(request: NextRequest) {
 
     const participantRepo = getParticipantRepository();
     const existing = await participantRepo.findByHobbyId(hobbyId);
-    const participant = existing.find((p) => p.userId === userId);
+    const participant = existing.find(
+      (p) => String(p.userId) === String(userId)
+    );
 
     if (!participant) {
       return NextResponse.json(

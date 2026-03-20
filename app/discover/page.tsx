@@ -101,6 +101,13 @@ export default function DiscoverPage() {
     }
   };
 
+  useEffect(() => {
+    if (!userId) return;
+    void loadSessions(currentFilters, currentRanking);
+    // Re-run search when login resolves so participationStatus matches the cookie user
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only refresh on identity change
+  }, [userId]);
+
   const handleJoinRequest = (hobbyId: string) => {
     if (!userId) {
       toast({
@@ -349,7 +356,13 @@ export default function DiscoverPage() {
         </aside>
       </main>
 
-      <Dialog open={joinOpen} onOpenChange={setJoinOpen}>
+      <Dialog
+        open={joinOpen}
+        onOpenChange={(open) => {
+          setJoinOpen(open);
+          if (!open) setPendingHobbyId(null);
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Request to join</DialogTitle>

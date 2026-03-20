@@ -3,7 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import { groupTitle, type SessionSearchResult } from "@/lib/types";
 import { Card } from "@/components/ui/card";
-import { useTheme } from "next-themes";
+
+declare global {
+  interface Window {
+    googleMapsLoaded?: boolean;
+    googleMapsCallbacks?: (() => void)[];
+  }
+}
 
 interface SessionMapProps {
   sessions: SessionSearchResult[];
@@ -104,6 +110,36 @@ const MAP_STYLES = [
   },
 ];
 
+/** Same-address meetups stack on the map; nudge markers in a ring so each stays clickable. */
+function markerDisplayLatLng(
+  sessions: SessionSearchResult[]
+): Map<string, { lat: number; lng: number }> {
+  const byKey = new Map<string, SessionSearchResult[]>();
+  for (const s of sessions) {
+    const key = `${s.location.latitude.toFixed(6)},${s.location.longitude.toFixed(6)}`;
+    const group = byKey.get(key) ?? [];
+    group.push(s);
+    byKey.set(key, group);
+  }
+  const out = new Map<string, { lat: number; lng: number }>();
+  const radius = 0.00025;
+  for (const group of byKey.values()) {
+    if (group.length === 1) {
+      const s = group[0];
+      out.set(s.id, { lat: s.location.latitude, lng: s.location.longitude });
+      continue;
+    }
+    group.forEach((s, i) => {
+      const angle = (2 * Math.PI * i) / group.length;
+      out.set(s.id, {
+        lat: s.location.latitude + Math.cos(angle) * radius,
+        lng: s.location.longitude + Math.sin(angle) * radius,
+      });
+    });
+  }
+  return out;
+}
+
 export function SessionMap({
   sessions,
   onSessionClick,
@@ -118,16 +154,7 @@ export function SessionMap({
     lat: number;
     lng: number;
   } | null>(null);
-  const { theme } = useTheme();
-
   useEffect(() => {
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-
-    if (!apiKey) {
-      setMapError("Google Maps API key not configured");
-      return;
-    }
-
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -141,17 +168,76 @@ export function SessionMap({
         }
       );
     }
+  }, []);
 
-    const script = document.createElement("script");
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
-    script.async = true;
-    script.defer = true;
-    script.onload = initializeMap;
-    script.onerror = () => setMapError("Failed to load Google Maps");
-    document.head.appendChild(script);
+  useEffect(() => {
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+
+    if (!apiKey) {
+      setMapError("Google Maps API key not configured");
+      return;
+    }
+
+    let cancelled = false;
+
+    const tryInit = () => {
+      if (cancelled || !mapRef.current || !window.google?.maps) return;
+      initializeMap();
+      // Flex/split layouts often give the map div height after first paint; force resize.
+      const map = (mapRef.current as unknown as { mapInstance?: google.maps.Map })
+        .mapInstance;
+      if (map) {
+        requestAnimationFrame(() => {
+          window.google?.maps.event.trigger(map, "resize");
+        });
+      }
+    };
+
+    const scheduleInit = () => {
+      requestAnimationFrame(() => tryInit());
+    };
+
+    if (window.google?.maps) {
+      scheduleInit();
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (window.googleMapsLoaded === undefined) {
+      window.googleMapsLoaded = false;
+      window.googleMapsCallbacks = [];
+      const script = document.createElement("script");
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
+        window.googleMapsLoaded = true;
+        window.googleMapsCallbacks?.forEach((cb) => cb());
+        window.googleMapsCallbacks = [];
+      };
+      script.onerror = () => {
+        if (!cancelled) setMapError("Failed to load Google Maps");
+      };
+      document.head.appendChild(script);
+    }
+
+    const onReady = () => {
+      if (!cancelled) scheduleInit();
+    };
+
+    if (window.googleMapsCallbacks) {
+      window.googleMapsCallbacks.push(onReady);
+    } else if (window.googleMapsLoaded) {
+      onReady();
+    }
 
     return () => {
-      document.head.removeChild(script);
+      cancelled = true;
+      if (window.googleMapsCallbacks?.length) {
+        const idx = window.googleMapsCallbacks.indexOf(onReady);
+        if (idx >= 0) window.googleMapsCallbacks.splice(idx, 1);
+      }
     };
   }, []);
 
@@ -191,6 +277,12 @@ export function SessionMap({
   const initializeMap = () => {
     if (!mapRef.current || !window.google) return;
 
+    const el = mapRef.current as unknown as { mapInstance?: google.maps.Map };
+    if (el.mapInstance) {
+      updateMarkers();
+      return;
+    }
+
     const map = new window.google.maps.Map(mapRef.current, {
       center: userLocation || { lat: 43.2609, lng: -79.9192 },
       zoom: 15,
@@ -202,7 +294,7 @@ export function SessionMap({
       zoomControl: true,
     });
 
-    (mapRef.current as any).mapInstance = map;
+    el.mapInstance = map;
     updateMarkers();
   };
 
@@ -222,6 +314,7 @@ export function SessionMap({
     const infoWindow = new window.google.maps.InfoWindow({
       disableAutoPan: true,
     });
+    const displayLatLng = markerDisplayLatLng(sessions);
 
     if (userLocation) {
       const userMarker = new window.google.maps.Marker({
@@ -257,11 +350,13 @@ export function SessionMap({
     }
 
     const sessionMarkers = sessions.map((session) => {
-      const marker = new window.google.maps.Marker({
-        position: {
+      const pos =
+        displayLatLng.get(session.id) ?? {
           lat: session.location.latitude,
           lng: session.location.longitude,
-        },
+        };
+      const marker = new window.google.maps.Marker({
+        position: pos,
         map,
         title: groupTitle(session),
         animation: window.google.maps.Animation.DROP,
@@ -355,7 +450,7 @@ export function SessionMap({
     : "overflow-hidden border-primary/20 shadow-lg rounded-xl";
 
   const mapStyles = fillHeight
-    ? "w-full flex-1 min-h-[280px] lg:min-h-0 bg-muted/20"
+    ? "w-full flex-1 min-h-[max(280px,min(40dvh,480px))] bg-muted/20"
     : "w-full h-[500px] bg-muted/20";
 
   return (

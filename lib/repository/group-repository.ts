@@ -271,7 +271,7 @@ export class MongoHobbyRepository implements IHobbyRepository {
         .toArray()) as unknown as HobbyDoc[];
     }
 
-    const hobbyIds = rows.map((r) => r._id);
+    const hobbyIds = rows.map((r) => String(r._id));
     const participantsByHobby: Record<string, import("@/lib/types").HobbyParticipant[]> =
       {};
 
@@ -283,7 +283,8 @@ export class MongoHobbyRepository implements IHobbyRepository {
 
       for (const p of participantRows) {
         const doc = p as Document;
-        const hid = String(doc.hobbyId);
+        const hid = String(doc.hobbyId ?? "");
+        if (!hid) continue;
         if (!participantsByHobby[hid]) participantsByHobby[hid] = [];
         participantsByHobby[hid].push({
           id: String(doc._id),
@@ -305,7 +306,7 @@ export class MongoHobbyRepository implements IHobbyRepository {
     for (const row of rows) {
       const host = await this.loadHost(row.hostId);
       const session = this.mapDoc(row, host);
-      const parts = participantsByHobby[row._id] || [];
+      const parts = participantsByHobby[String(row._id)] || [];
       session.participants = parts;
 
       let distance: number | undefined;

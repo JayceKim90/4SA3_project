@@ -44,7 +44,9 @@ export function SessionCard({
     session.participants?.filter((p) => p.status === "approved").length || 0;
 
 
-  const isMySession = currentUserId && session.hostId === currentUserId;
+  const isMySession =
+    !!currentUserId &&
+    String(session.hostId) === String(currentUserId);
 
 
   const isSessionPast = (): boolean => {
