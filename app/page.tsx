@@ -283,7 +283,7 @@ export default async function HomePage() {
                 <span className="text-primary font-bold">Sungsu Kim</span>
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                Copyright © 2025 Sungsu Kim. All rights reserved.
+                Copyright © {new Date().getFullYear()} Sungsu Kim. All rights reserved.
               </p>
             </div>
           </div>
