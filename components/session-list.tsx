@@ -9,6 +9,8 @@ interface SessionListProps {
   onCancelClick?: (sessionId: string) => void;
   onSessionClick?: (sessionId: string) => void;
   currentUserId?: string | null;
+  /** Single-column scroll rail (discover split layout) */
+  variant?: "grid" | "rail";
 }
 
 export function SessionList({
@@ -17,6 +19,7 @@ export function SessionList({
   onCancelClick,
   onSessionClick,
   currentUserId,
+  variant = "grid",
 }: SessionListProps) {
   if (sessions.length === 0) {
     return (
@@ -29,14 +32,20 @@ export function SessionList({
     );
   }
 
+  const listClass =
+    variant === "rail"
+      ? "flex flex-col gap-4"
+      : "grid grid-cols-1 lg:grid-cols-2 gap-6";
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className={listClass}>
       {sessions.map((session, index) => (
         <div
           key={session.id}
-          className="animate-in fade-in-up duration-500"
-          style={{ 
-            animationDelay: `${Math.min(index * 80, 400)}ms`
+          id={`discover-meetup-${session.id}`}
+          className="animate-in fade-in-up duration-500 scroll-mt-4"
+          style={{
+            animationDelay: `${Math.min(index * 80, 400)}ms`,
           }}
         >
           <SessionCard

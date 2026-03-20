@@ -7,7 +7,7 @@ import { SessionFilters } from "@/components/session-filters";
 import { SessionList } from "@/components/session-list";
 import { SessionMap } from "@/components/session-map";
 import { LogoutButton } from "@/components/logout-button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, MapPin, Sparkles } from "lucide-react";
 import type {
   SessionSearchResult,
   SessionFilters as Filters,
@@ -55,7 +55,8 @@ export default function DiscoverPage() {
       .catch((err) => console.error("Failed to fetch user:", err));
 
     const mediator = getSessionMediator();
-    mediator.registerComponent("discover-page", (event, data) => {      if (
+    mediator.registerComponent("discover-page", (event) => {
+      if (
         event === "hobby:created" ||
         event === "hobby:updated" ||
         event === "session:created" ||
@@ -117,6 +118,7 @@ export default function DiscoverPage() {
 
   const submitJoinRequest = async () => {
     if (!userId || !pendingHobbyId) return;
+    const hobbyIdForNotify = pendingHobbyId;
     if (!contactEmail.trim() || !contactPhone.trim()) {
       toast({
         title: "Missing contact",
@@ -131,7 +133,7 @@ export default function DiscoverPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          hobbyId: pendingHobbyId,
+          hobbyId: hobbyIdForNotify,
           userId,
           contactEmail: contactEmail.trim(),
           contactPhone: contactPhone.trim(),
@@ -153,7 +155,11 @@ export default function DiscoverPage() {
       loadSessions(currentFilters, currentRanking);
 
       const mediator = getSessionMediator();
-      mediator.notifyParticipantStatusChanged(pendingHobbyId, userId, "pending");
+      mediator.notifyParticipantStatusChanged(
+        hobbyIdForNotify,
+        userId,
+        "pending"
+      );
     } catch (error) {
       console.error("[HobbyHop] Error requesting to join:", error);
       toast({
@@ -195,140 +201,152 @@ export default function DiscoverPage() {
 
   const handleSessionFocus = (sessionId: string) => {
     setFocusedSessionId(sessionId);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    requestAnimationFrame(() => {
+      document
+        .getElementById(`discover-meetup-${sessionId}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 relative overflow-hidden">
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
-        <div className="absolute top-[5%] right-[10%] w-[25%] h-[25%] rounded-full bg-primary/10 blur-3xl animate-float" />
-        <div
-          className="absolute bottom-[15%] left-[5%] w-[30%] h-[30%] rounded-full bg-accent/15 blur-3xl animate-float"
-          style={{ animationDelay: "2s" }}
-        />
-        <div
-          className="absolute top-[40%] left-[15%] w-[20%] h-[20%] rounded-full bg-blue-400/10 blur-3xl animate-float"
-          style={{ animationDelay: "4s" }}
-        />
-        <div
-          className="absolute bottom-[30%] right-[20%] w-[25%] h-[25%] rounded-full bg-sky-400/10 blur-3xl animate-float"
-          style={{ animationDelay: "6s" }}
-        />
-      </div>
+    <div className="min-h-screen flex flex-col bg-background relative overflow-hidden">
+      <div
+        className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-primary/[0.08] via-transparent to-primary/[0.06]"
+        aria-hidden
+      />
 
-      <header className="border-b border-border/40 backdrop-blur-xl sticky top-0 z-50 bg-background/70 shadow-lg shadow-primary/5 animate-in fade-in slide-in-from-top duration-500">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4 animate-in fade-in slide-in-from-left duration-700">
-              <Link href="/">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="hover:bg-primary/10 transition-all hover:scale-110 active:scale-95"
-                >
-                  <ArrowLeft className="h-5 w-5" />
-                </Button>
-              </Link>
-              <img 
-                src="/logo.svg" 
-                alt="HobbyHop Logo" 
-                className="h-8 w-8 animate-in zoom-in duration-500" 
+      <header className="shrink-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/65">
+        <div className="mx-auto flex h-14 max-w-[1920px] items-center justify-between gap-4 px-4 sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
+            <Link href="/">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="shrink-0 rounded-full text-muted-foreground hover:text-foreground"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            </Link>
+            <div className="hidden h-8 w-px bg-border sm:block" />
+            <div className="flex min-w-0 items-center gap-3">
+              <img
+                src="/logo.svg"
+                alt=""
+                className="h-8 w-8 shrink-0 drop-shadow-sm"
               />
-              <div>
-                <h1 className="text-2xl font-bold text-primary bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                  Discover hobby groups
+              <div className="min-w-0">
+                <h1 className="truncate text-base font-semibold tracking-tight text-foreground sm:text-lg">
+                  Discover
                 </h1>
-                <p className="text-sm text-muted-foreground">
-                  Find and join meetups near you
+                <p className="truncate text-xs text-muted-foreground sm:text-sm">
+                  Map + meetups near you
                 </p>
               </div>
             </div>
-            <div className="animate-in fade-in slide-in-from-right duration-700">
-              <LogoutButton />
-            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {!isLoading && sessions.length > 0 && (
+              <span className="hidden items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary sm:inline-flex">
+                <Sparkles className="h-3.5 w-3.5" />
+                {sessions.length} near you
+              </span>
+            )}
+            <LogoutButton />
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6">
-        <div className="flex gap-6">
-          <aside className="w-80 flex-shrink-0 animate-in fade-in slide-in-from-left duration-700">
-            <div className="sticky top-24">
-              <div className="bg-card/50 backdrop-blur-md border border-primary/20 rounded-xl shadow-lg shadow-primary/5 p-6 transition-all hover:shadow-xl hover:shadow-primary/10 hover:border-primary/30">
-                <SessionFilters onFilterChange={loadSessions} />
-              </div>
+      <main className="flex min-h-0 flex-1 flex-col lg:h-[calc(100dvh-3.5rem)] lg:max-h-[calc(100dvh-3.5rem)] lg:flex-row">
+        {/* Left: map */}
+        <section className="relative flex min-h-[300px] flex-col border-border/40 bg-gradient-to-b from-muted/20 to-transparent px-4 pb-4 pt-4 sm:min-h-[360px] lg:h-full lg:min-h-0 lg:w-[56%] lg:max-w-[960px] lg:flex-1 lg:border-r lg:px-6 lg:pb-6 lg:pt-5 xl:w-[58%]">
+          <div className="mb-3 flex items-center justify-between gap-2 lg:mb-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-primary">
+                <MapPin className="h-4 w-4" />
+              </span>
+              <span>Explore the map</span>
             </div>
-          </aside>
+            {focusedSessionId && (
+              <span className="hidden truncate text-xs text-muted-foreground sm:block max-w-[12rem]">
+                Focused on selected meetup
+              </span>
+            )}
+          </div>
+          <div
+            className={`min-h-0 flex-1 transition-[box-shadow] duration-300 ${
+              focusedSessionId
+                ? "rounded-2xl ring-2 ring-primary/35 ring-offset-2 ring-offset-background"
+                : ""
+            }`}
+          >
+            <SessionMap
+              sessions={sessions}
+              onSessionClick={handleJoinRequest}
+              focusedSessionId={focusedSessionId}
+              fillHeight
+              className="h-full"
+            />
+          </div>
+        </section>
 
-          <div className="flex-1 flex flex-col gap-6 animate-in fade-in slide-in-from-right duration-700">
-            <div className="w-full animate-in zoom-in-95 duration-500 delay-100">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-lg font-semibold text-primary flex items-center gap-2">
-                  <span className="inline-block w-1 h-6 bg-primary rounded-full animate-pulse" />
-                  Map View
-                </h2>
-              </div>
-              <div className={`transition-all duration-300 ${focusedSessionId ? 'ring-2 ring-primary/50 ring-offset-2 ring-offset-background' : ''}`}>
-                <SessionMap
-                  sessions={sessions}
-                  onSessionClick={handleJoinRequest}
-                  focusedSessionId={focusedSessionId}
-                />
-              </div>
+        {/* Right: filters + list rail */}
+        <aside className="flex min-h-0 flex-1 flex-col bg-card/30 backdrop-blur-md lg:min-w-0 lg:max-w-none">
+          <div className="shrink-0 border-b border-border/50 bg-background/60 px-4 py-4 sm:px-5">
+            <div className="mx-auto max-w-xl rounded-2xl border border-border/60 bg-card/90 p-4 shadow-sm lg:max-w-none">
+              <SessionFilters onFilterChange={loadSessions} />
+            </div>
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5 sm:py-5 [scrollbar-gutter:stable]">
+            <div className="mx-auto mb-3 flex max-w-xl items-end justify-between gap-2 lg:max-w-none">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                Meetups
+              </h2>
+              <span className="rounded-md bg-muted px-2 py-0.5 text-xs font-medium tabular-nums text-muted-foreground">
+                {isLoading ? "…" : sessions.length}
+              </span>
             </div>
 
-            <div className="w-full animate-in fade-in-up duration-500 delay-200">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-lg font-semibold text-primary flex items-center gap-2">
-                  <span className="inline-block w-1 h-6 bg-primary rounded-full animate-pulse" />
-                  Meetups ({sessions.length})
-                </h2>
+            {isLoading ? (
+              <div className="mx-auto flex max-w-xl flex-col items-center justify-center rounded-2xl border border-dashed border-border/80 bg-muted/20 py-20 lg:max-w-none">
+                <div className="relative mb-4 h-11 w-11">
+                  <div className="absolute inset-0 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
+                </div>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Loading meetups…
+                </p>
               </div>
-              {isLoading ? (
-                <div className="text-center py-16 bg-card/50 backdrop-blur-sm rounded-2xl border border-primary/20 shadow-lg">
-                  <div className="relative inline-block">
-                    <div className="h-12 w-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div>
-                    <div className="absolute inset-0 h-12 w-12 border-4 border-transparent border-t-primary/50 rounded-full animate-spin mb-4" style={{ animationDuration: '0.75s', animationDirection: 'reverse' }}></div>
-                  </div>
-                  <p className="text-muted-foreground font-medium">Loading meetups...</p>
-                  <p className="text-sm text-muted-foreground/70 mt-2">Finding meetups for you</p>
+            ) : sessions.length === 0 ? (
+              <div className="mx-auto max-w-xl rounded-2xl border border-border/70 bg-gradient-to-b from-card to-card/80 p-8 text-center shadow-inner lg:max-w-none">
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <MapPin className="h-7 w-7 opacity-90" />
                 </div>
-              ) : sessions.length === 0 ? (
-                <div className="text-center py-16 bg-gradient-to-br from-card/50 to-card/30 backdrop-blur-sm rounded-2xl border border-primary/20 shadow-lg animate-in zoom-in duration-500">
-                  <div className="mb-6 relative">
-                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 backdrop-blur-sm">
-                      <svg className="w-10 h-10 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                      </svg>
-                    </div>
-                  </div>
-                  <p className="text-lg font-semibold text-foreground mb-2">
-                    No meetups found
-                  </p>
-                  <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
-                    Try adjusting your filters or create the first meetup
-                  </p>
-                  <Link href="/create">
-                    <Button className="bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 hover:scale-105 active:scale-95">
-                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                      </svg>
-                      Create a group
-                    </Button>
-                  </Link>
-                </div>
-              ) : (
+                <p className="mb-1 text-lg font-semibold text-foreground">
+                  No meetups match
+                </p>
+                <p className="mb-6 text-sm text-muted-foreground">
+                  Loosen filters or host the first one.
+                </p>
+                <Link href="/create">
+                  <Button className="rounded-full px-6 shadow-md">
+                    Host a hobby meetup
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="mx-auto max-w-xl pb-8 lg:max-w-none">
                 <SessionList
                   sessions={sessions}
                   onJoinClick={handleJoinRequest}
                   onCancelClick={handleCancelRequest}
                   onSessionClick={handleSessionFocus}
                   currentUserId={userId}
+                  variant="rail"
                 />
-              )}
-            </div>
+              </div>
+            )}
           </div>
-        </div>
+        </aside>
       </main>
 
       <Dialog open={joinOpen} onOpenChange={setJoinOpen}>

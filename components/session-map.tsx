@@ -9,6 +9,10 @@ interface SessionMapProps {
   sessions: SessionSearchResult[];
   onSessionClick?: (sessionId: string) => void;
   focusedSessionId?: string | null;
+  /** When true, map expands in a flex parent (split discover layout) */
+  fillHeight?: boolean;
+  className?: string;
+  mapClassName?: string;
 }
 
 const MAP_STYLES = [
@@ -104,6 +108,9 @@ export function SessionMap({
   sessions,
   onSessionClick,
   focusedSessionId,
+  fillHeight = false,
+  className,
+  mapClassName,
 }: SessionMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const [mapError, setMapError] = useState<string | null>(null);
@@ -328,7 +335,11 @@ export function SessionMap({
 
   if (mapError) {
     return (
-      <Card className="h-[400px] flex items-center justify-center bg-muted/50">
+      <Card
+        className={`flex items-center justify-center bg-muted/50 ${
+          fillHeight ? "min-h-[280px] flex-1 h-full" : "h-[400px]"
+        } ${className ?? ""}`}
+      >
         <div className="text-center p-6">
           <p className="text-muted-foreground mb-2 font-medium">{mapError}</p>
           <p className="text-sm text-muted-foreground">
@@ -339,9 +350,20 @@ export function SessionMap({
     );
   }
 
+  const cardStyles = fillHeight
+    ? "h-full min-h-0 flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-2xl ring-1 ring-black/5 dark:ring-white/10"
+    : "overflow-hidden border-primary/20 shadow-lg rounded-xl";
+
+  const mapStyles = fillHeight
+    ? "w-full flex-1 min-h-[280px] lg:min-h-0 bg-muted/20"
+    : "w-full h-[500px] bg-muted/20";
+
   return (
-    <Card className="overflow-hidden border-primary/20 shadow-lg">
-      <div ref={mapRef} className="w-full h-[500px] bg-muted/20" />
+    <Card className={`${cardStyles} ${className ?? ""}`}>
+      <div
+        ref={mapRef}
+        className={`${mapStyles} ${mapClassName ?? ""}`}
+      />
     </Card>
   );
 }
